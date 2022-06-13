@@ -1,0 +1,42 @@
+@startuml bin-option-rust
+
+cloud api [
+    Yahoo!ファイナンスAPI
+]
+
+node server {
+    database db {
+        storage models [
+            学習モデル
+        ]
+        storage rates [
+            レート
+        ]
+    }
+
+    agent ForecastServer
+    agent RateFetchBatch
+    note left of RateFetchBatch
+    定期的に実行
+    end note
+
+    agent TrainingBatch
+    note left of TrainingBatch
+    定期的に実行
+    end note
+}
+
+node local {
+    agent MT4
+}
+
+models --> ForecastServer
+ForecastServer --> MT4
+
+models <--> TrainingBatch
+rates -->TrainingBatch
+
+api --> RateFetchBatch
+RateFetchBatch --> rates
+
+@enduml
