@@ -1,0 +1,17 @@
+[tasks.run_forecast_server]
+description = "Run forecast-server"
+category = "MyCommand"
+command = "cargo"
+args = ["run", "--bin", "forecast_server"]
+
+[tasks.run_rate_gateway]
+description = "Run rate-gateway"
+category = "MyCommand"
+command = "cargo"
+args = ["run", "--bin", "rate_gateway"]
+
+[tasks.run_training_batch]
+description = "Run training-batch"
+category = "MyCommand"
+command = "cargo"
+args = ["run", "--bin", "training_batch"]
