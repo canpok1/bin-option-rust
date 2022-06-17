@@ -1,8 +1,11 @@
 @startuml bin-option-rust
 
-cloud api [
-    Yahoo!ファイナンスAPI
+cloud gas [
+    SpreadSheet
 ]
+note left of gas
+定期的に実行
+end note
 
 node server {
     database db {
@@ -15,10 +18,8 @@ node server {
     }
 
     agent ForecastServer
-    agent RateFetchBatch
-    note left of RateFetchBatch
-    定期的に実行
-    end note
+
+    agent RateGateway
 
     agent TrainingBatch
     note left of TrainingBatch
@@ -36,7 +37,7 @@ ForecastServer --> MT4
 models <--> TrainingBatch
 rates -->TrainingBatch
 
-api --> RateFetchBatch
-RateFetchBatch --> rates
+gas --> RateGateway
+RateGateway --> rates
 
 @enduml
