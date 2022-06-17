@@ -25,7 +25,9 @@
 	"extensions": [
 		"rust-lang.rust",
 		"vadimcn.vscode-lldb",
-		"jebbs.plantuml"
+		"jebbs.plantuml",
+		"redhat.vscode-yaml",
+		"arjun.swagger-viewer"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
