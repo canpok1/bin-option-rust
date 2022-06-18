@@ -6,10 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rate-gateway-lib = { path = "../rate-gateway-lib" }
-swagger = { version = "6.1", features = ["serdejson", "server", "client", "tls", "tcp"] }
 async-trait = "0.1.24"
-log = "0.4.0"
-hyper = {version = "0.14"}
-tokio = { version = "1.14", features = ["full"] }
 env_logger = "0.8.3"
+envy = "0.4"
+hyper = {version = "0.14"}
+log = "0.4.0"
+rate-gateway-lib = { path = "../rate-gateway-lib" }
+serde = { version = "1.0", features = ["derive"] }
+swagger = { version = "6.1", features = ["serdejson", "server", "client", "tls", "tcp"] }
+tokio = { version = "1.14", features = ["full"] }
