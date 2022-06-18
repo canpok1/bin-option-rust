@@ -14,7 +14,7 @@ To see how to make this your own, look here:
 [README]((https://openapi-generator.tech))
 
 - API version: 1.0.0
-- Build date: 2022-06-18T03:35:29.630313Z[Etc/UTC]
+- Build date: 2022-06-18T12:49:59.003894Z[Etc/UTC]
 
 
 
@@ -91,7 +91,7 @@ See https://doc.rust-lang.org/cargo/reference/manifest.html#the-features-section
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *http://localhost18080*
+All URIs are relative to *http://localhost:18080*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------

@@ -1,6 +1,7 @@
 extern crate common_lib;
 extern crate rate_gateway_lib;
 
+use common_lib::mysql;
 use log::{error, info};
 
 mod config;
@@ -14,13 +15,35 @@ fn init_logger() {
 async fn main() {
     init_logger();
 
-    let config = envy::from_env::<config::Config>();
-    if let Err(error) = config {
-        error!("failed to load config, error: {}", error);
-        return;
+    let config: config::Config;
+    match envy::from_env::<config::Config>() {
+        Ok(c) => {
+            config = c;
+        }
+        Err(err) => {
+            error!("failed to load config, error: {}", err);
+            return;
+        }
     }
 
-    let addr = config.unwrap().get_address();
+    let mysql_cli: mysql::client::DefaultClient;
+    match mysql::client::DefaultClient::new(
+        &config.db_user_name,
+        &config.db_password,
+        &config.db_host,
+        config.db_port,
+        &config.db_name,
+    ) {
+        Ok(cli) => {
+            mysql_cli = cli;
+        }
+        Err(err) => {
+            error!("failed to load config, error: {}", err);
+            return;
+        }
+    }
+
+    let addr = config.get_address();
     info!("start RateGateway {}", addr);
-    server::run(&addr).await;
+    server::run(&addr, mysql_cli).await;
 }

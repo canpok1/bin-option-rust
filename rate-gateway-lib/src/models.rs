@@ -238,21 +238,19 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 pub struct Rate {
     /// レートの日時
     #[serde(rename = "time")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub time: Option<String>,
+    pub time: String,
 
     /// レートの値
     #[serde(rename = "value")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub value: Option<f64>,
+    pub value: f64,
 
 }
 
 impl Rate {
-    pub fn new() -> Rate {
+    pub fn new(time: String, value: f64, ) -> Rate {
         Rate {
-            time: None,
-            value: None,
+            time: time,
+            value: value,
         }
     }
 }
@@ -264,16 +262,12 @@ impl std::string::ToString for Rate {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
 
-        if let Some(ref time) = self.time {
-            params.push("time".to_string());
-            params.push(time.to_string());
-        }
+        params.push("time".to_string());
+        params.push(self.time.to_string());
 
 
-        if let Some(ref value) = self.value {
-            params.push("value".to_string());
-            params.push(value.to_string());
-        }
+        params.push("value".to_string());
+        params.push(self.value.to_string());
 
         params.join(",").to_string()
     }
@@ -319,8 +313,8 @@ impl std::str::FromStr for Rate {
 
         // Use the intermediate representation to return the struct
         std::result::Result::Ok(Rate {
-            time: intermediate_rep.time.into_iter().next(),
-            value: intermediate_rep.value.into_iter().next(),
+            time: intermediate_rep.time.into_iter().next().ok_or("time missing in Rate".to_string())?,
+            value: intermediate_rep.value.into_iter().next().ok_or("value missing in Rate".to_string())?,
         })
     }
 }

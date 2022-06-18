@@ -5,13 +5,14 @@ use rate_gateway_lib::{
 };
 
 use async_trait::async_trait;
+use common_lib::mysql::{self, client::Client};
 use log::info;
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
 
-pub async fn run(addr: &str) {
+pub async fn run(addr: &str, mysql_cli: mysql::client::DefaultClient) {
     let addr = addr.parse().expect("Failed to parse bind address");
 
-    let server = Server::new();
+    let server = Server::new(mysql_cli);
 
     let service = MakeService::new(server);
 
@@ -26,12 +27,16 @@ pub async fn run(addr: &str) {
         .unwrap()
 }
 
-#[derive(Copy, Clone)]
-pub struct Server {}
+#[derive(Clone)]
+pub struct Server {
+    mysql_cli: mysql::client::DefaultClient,
+}
 
 impl Server {
-    pub fn new() -> Self {
-        Server {}
+    pub fn new(mysql_cli: mysql::client::DefaultClient) -> Self {
+        Server {
+            mysql_cli: mysql_cli,
+        }
     }
 }
 
@@ -44,17 +49,36 @@ where
     async fn rates_pair_post(
         &self,
         pair: String,
-        rate: &Vec<models::Rate>,
+        rates: &Vec<models::Rate>,
         context: &C,
     ) -> Result<RatesPairPostResponse, ApiError> {
         let context = context.clone();
         info!(
             "rates_pair_post(\"{}\", {:?}) - X-Span-ID: {:?}",
             pair,
-            rate,
+            rates,
             context.get().0.clone()
         );
-        let response = RatesPairPostResponse::Status201(PostSuccess { count: 0 });
-        Ok(response)
+
+        let rates = rates
+            .iter()
+            .map(|rate| mysql::model::RateForTraining::new(&pair, &rate.time, rate.value))
+            .collect();
+        if let Err(err) = rates {
+            return Ok(RatesPairPostResponse::Status400(models::Error {
+                message: format!("parameter is invalid, {}", err),
+            }));
+        }
+        let rates = rates.unwrap();
+
+        if let Err(err) = self.mysql_cli.insert_rates_for_training(&rates) {
+            return Ok(RatesPairPostResponse::Status500(models::Error {
+                message: format!("internal server error, {}", err),
+            }));
+        }
+
+        Ok(RatesPairPostResponse::Status201(PostSuccess {
+            count: rates.len() as i64,
+        }))
     }
 }

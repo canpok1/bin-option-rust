@@ -37,12 +37,12 @@ fn main() {
         .arg(Arg::with_name("host")
             .long("host")
             .takes_value(true)
-            .default_value("localhost18080")
+            .default_value("localhost")
             .help("Hostname to contact"))
         .arg(Arg::with_name("port")
             .long("port")
             .takes_value(true)
-            .default_value("8080")
+            .default_value("18080")
             .help("Port to contact"))
         .get_matches();
 

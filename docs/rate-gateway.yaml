@@ -60,6 +60,9 @@ components:
     Rate:
       description: レート
       type: object
+      required:
+        - time
+        - value
       properties:
         time:
           description: レートの日時

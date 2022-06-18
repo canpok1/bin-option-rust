@@ -2,6 +2,14 @@ env_files = [
     "./local.env",
 ]
 
+[tasks.build_common_lib]
+description = "Build common-lib"
+category = "MyCommand"
+workspace = false
+command = "cargo"
+args = ["build", "-p", "common-lib"]
+
+
 [tasks.run_forecast_server]
 description = "Run forecast-server"
 category = "MyCommand"
@@ -23,6 +31,7 @@ category = "MyCommand"
 workspace = false
 command = "cargo"
 args = ["run", "-p", "training-batch"]
+
 
 [tasks.generate_rate_gateway_lib]
 description = "Generate rate-gateway-lib"
