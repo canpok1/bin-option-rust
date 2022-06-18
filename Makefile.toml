@@ -1,17 +1,34 @@
 [tasks.run_forecast_server]
 description = "Run forecast-server"
 category = "MyCommand"
+workspace = false
 command = "cargo"
-args = ["run", "--bin", "forecast_server"]
+args = ["run", "-p", "forecast-server"]
 
 [tasks.run_rate_gateway]
 description = "Run rate-gateway"
 category = "MyCommand"
+workspace = false
 command = "cargo"
-args = ["run", "--bin", "rate_gateway"]
+args = ["run", "-p", "rate-gateway"]
 
 [tasks.run_training_batch]
 description = "Run training-batch"
 category = "MyCommand"
+workspace = false
 command = "cargo"
-args = ["run", "--bin", "training_batch"]
+args = ["run", "-p", "training-batch"]
+
+[tasks.generate_rate_gateway_lib]
+description = "Generate rate-gateway-lib"
+category = "MyCommand"
+workspace = false
+command = "openapi-generator-cli"
+args = ["generate", "-g", "rust-server", "-i", "docs/rate-gateway.yaml", "-o", "rate-gateway-lib", "--package-name", "rate-gateway-lib"]
+
+[tasks.generate_forecast_server_lib]
+description = "Generate forecast-server-lib"
+category = "MyCommand"
+workspace = false
+command = "openapi-generator-cli"
+args = ["generate", "-g", "rust-server", "-i", "docs/forecast-server.yaml", "-o", "forecast-server-lib", "--package-name", "forecast-server-lib"]

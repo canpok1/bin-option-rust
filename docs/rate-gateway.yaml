@@ -23,7 +23,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Rates"
+              description: レートのリスト
+              type: array
+              items:
+                $ref: "#/components/schemas/Rate"
         required: true
       responses:
         "201":
@@ -66,11 +69,6 @@ components:
           description: レートの値
           type: number
           format: double
-    Rates:
-      description: レートのリスト
-      type: array
-      items:
-        $ref: "#/components/schemas/Rate"
     PostSuccess:
       description: Post成功時の情報
       type: object

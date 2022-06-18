@@ -1,0 +1,162 @@
+openapi: 3.0.0
+info:
+  license:
+    name: MIT
+  title: ForecastServer
+  version: 1.0.0
+servers:
+- url: http://localhost28080/
+tags:
+- description: レート関連
+  name: rates
+paths:
+  /histories:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/History'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_histories_post_201_response'
+          description: 登録成功
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 登録失敗（リクエストパラメータ不備）
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 登録失敗（通貨ペアが非対応）
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 登録失敗（内部エラー）
+      summary: レート履歴を新規登録します
+      tags:
+      - rates
+  /forecast/after5min/{historyId}:
+    get:
+      parameters:
+      - description: レート履歴ID
+        explode: false
+        in: path
+        name: historyId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_forecast_after5min__historyId__get_200_response'
+          description: 登録成功
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 登録失敗（レート情報が見つからない）
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: 登録失敗（内部エラー）
+      summary: 5分後の予想を取得します
+      tags:
+      - rates
+components:
+  schemas:
+    Rate:
+      description: レート
+      example:
+        time: time
+        value: 0.8008281904610115
+      properties:
+        time:
+          description: レートの日時
+          format: dateTime
+          type: string
+        value:
+          description: レートの値
+          format: double
+          type: number
+      type: object
+    History:
+      description: レート履歴
+      example:
+        rates:
+        - 0.8008281904610115
+        - 0.8008281904610115
+        pair: USDJPY
+      properties:
+        pair:
+          description: 通貨ペア
+          enum:
+          - USDJPY
+          type: string
+        rates:
+          items:
+            description: レートの推移（先頭が過去）
+            format: double
+            type: number
+          type: array
+      type: object
+    Error:
+      description: エラー情報
+      properties:
+        message:
+          description: エラーメッセージ
+          type: string
+      required:
+      - message
+      type: object
+    _histories_post_201_response:
+      description: 成功時の情報
+      example:
+        expires: expires
+        historyId: historyId
+        count: 0
+      properties:
+        historyId:
+          description: レート履歴ID
+          type: string
+        count:
+          description: 登録数
+          format: int64
+          type: integer
+        expires:
+          description: 有効期限
+          format: dateTime
+          type: string
+      required:
+      - count
+      - id
+      type: object
+    _forecast_after5min__historyId__get_200_response:
+      description: 成功時の情報
+      example:
+        rate:
+          time: time
+          value: 0.8008281904610115
+      properties:
+        rate:
+          $ref: '#/components/schemas/Rate'
+      required:
+      - rate
+      type: object
+
