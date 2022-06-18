@@ -31,6 +31,11 @@ node server {
     note left of TrainingBatch
     定期的に実行
     end note
+
+    agent DataCleanBatch
+    note left of DataCleanBatch
+    定期的に実行
+    end note
 }
 
 node local {
@@ -47,5 +52,9 @@ rates -->TrainingBatch
 
 gas --> RateGateway
 RateGateway --> rates
+
+DataCleanBatch --> rates
+DataCleanBatch --> histories
+DataCleanBatch --> forecast
 
 @enduml

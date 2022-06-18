@@ -32,6 +32,13 @@ workspace = false
 command = "cargo"
 args = ["run", "-p", "training-batch"]
 
+[tasks.run_data_clean_batch]
+description = "Run data-clean-batch"
+category = "MyCommand"
+workspace = false
+command = "cargo"
+args = ["run", "-p", "data-clean-batch"]
+
 
 [tasks.generate_rate_gateway_lib]
 description = "Generate rate-gateway-lib"

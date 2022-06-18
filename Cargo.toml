@@ -6,4 +6,5 @@ members = [
     "forecast-server-lib",
     "training-batch",
     "common-lib",
+    "data-clean-batch",
 ]
