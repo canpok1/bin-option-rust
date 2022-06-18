@@ -13,7 +13,13 @@ node server {
             学習モデル
         ]
         storage rates [
-            レート
+            レート（学習用）
+        ]
+        storage histories [
+            レート（予測用）
+        ]
+        storage forecast [
+            予測結果
         ]
     }
 
@@ -32,7 +38,9 @@ node local {
 }
 
 models --> ForecastServer
-ForecastServer --> MT4
+histories <--> ForecastServer
+forecast <--> ForecastServer
+ForecastServer <--> MT4
 
 models <--> TrainingBatch
 rates -->TrainingBatch
