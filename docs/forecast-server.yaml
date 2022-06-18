@@ -1,0 +1,139 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: ForecastServer
+  license:
+    name: MIT
+servers:
+  - url: http://localhost28080/
+paths:
+  /histories:
+    post:
+      summary: レート履歴を新規登録します
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/History"
+        required: true
+      responses:
+        "201":
+          description: 登録成功
+          content:
+            application/json:
+              schema:
+                description: 成功時の情報
+                type: object
+                required:
+                  - id
+                  - count
+                properties:
+                  historyId:
+                    description: レート履歴ID
+                    type: string
+                  count:
+                    description: 登録数
+                    type: integer
+                    format: int64
+                  expires:
+                    description: 有効期限
+                    type: string
+                    format: dateTime
+        "400":
+          description: 登録失敗（リクエストパラメータ不備）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 登録失敗（通貨ペアが非対応）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 登録失敗（内部エラー）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      tags:
+        - rates
+  /forecast/after5min/{historyId}:
+    get:
+      summary: 5分後の予想を取得します
+      parameters:
+        - name: historyId
+          in: path
+          required: true
+          description: レート履歴ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 登録成功
+          content:
+            application/json:
+              schema:
+                description: 成功時の情報
+                type: object
+                required:
+                  - rate
+                properties:
+                  rate:
+                    $ref: "#/components/schemas/Rate"
+        "404":
+          description: 登録失敗（レート情報が見つからない）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 登録失敗（内部エラー）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      tags:
+        - rates
+components:
+  schemas:
+    Rate:
+      description: レート
+      type: object
+      properties:
+        time:
+          description: レートの日時
+          type: string
+          format: dateTime
+        value:
+          description: レートの値
+          type: number
+          format: double
+    History:
+      description: レート履歴
+      type: object
+      properties:
+        pair:
+          description: 通貨ペア
+          type: string
+          enum:
+            - USDJPY
+        rates:
+          type: array
+          items:
+            description: レートの推移（先頭が過去）
+            type: number
+            format: double
+    Error:
+      description: エラー情報
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          description: エラーメッセージ
+          type: string
+tags:
+  - name: rates
+    description: レート関連
