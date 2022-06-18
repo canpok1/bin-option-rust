@@ -11,6 +11,7 @@ category = "MyCommand"
 workspace = false
 command = "cargo"
 args = ["run", "-p", "rate-gateway"]
+env = { "RUST_LOG" = "debug" }
 
 [tasks.run_training_batch]
 description = "Run training-batch"

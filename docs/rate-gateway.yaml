@@ -5,7 +5,7 @@ info:
   license:
     name: MIT
 servers:
-  - url: http://localhost18080/
+  - url: http://localhost:18080/
 paths:
   /rates/{pair}:
     post:
