@@ -5,9 +5,12 @@ use crate::error::MyResult;
 
 use super::model::RateForTraining;
 
-pub trait Client {
-    fn insert_rates_for_training(&self, rates: &Vec<RateForTraining>) -> MyResult<()>;
-    fn delete_old_rates_for_training(&self, border: &NaiveDateTime) -> MyResult<()>;
+pub trait Client<T>
+where
+    T: Queryable,
+{
+    fn insert_rates_for_training(&self, tx: &mut T, rates: &Vec<RateForTraining>) -> MyResult<()>;
+    fn delete_old_rates_for_training(&self, tx: &mut T, border: &NaiveDateTime) -> MyResult<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -35,7 +38,7 @@ impl DefaultClient {
         })
     }
 
-    fn get_conn(&self) -> MyResult<PooledConn> {
+    pub fn get_conn(&self) -> MyResult<PooledConn> {
         match self.pool.get_conn() {
             Ok(v) => Ok(v),
             Err(e) => Err(Box::new(e)),
@@ -43,11 +46,12 @@ impl DefaultClient {
     }
 }
 
-impl Client for DefaultClient {
-    fn insert_rates_for_training(&self, rates: &Vec<RateForTraining>) -> MyResult<()> {
-        let mut conn = self.get_conn()?;
-
-        conn.exec_batch(
+impl<T> Client<T> for DefaultClient
+where
+    T: Queryable,
+{
+    fn insert_rates_for_training(&self, tx: &mut T, rates: &Vec<RateForTraining>) -> MyResult<()> {
+        tx.exec_batch(
             format!(
                 "INSERT INTO {} (pair, recorded_at, rate) VALUES (:pair, :recorded_at, :rate);",
                 RateForTraining::get_table_name()
@@ -64,10 +68,8 @@ impl Client for DefaultClient {
         Ok(())
     }
 
-    fn delete_old_rates_for_training(&self, border: &NaiveDateTime) -> MyResult<()> {
-        let mut conn = self.get_conn()?;
-
-        conn.exec_drop(
+    fn delete_old_rates_for_training(&self, tx: &mut T, border: &NaiveDateTime) -> MyResult<()> {
+        tx.exec_drop(
             format!(
                 "DELETE FROM {} WHERE recorded_at < :border;",
                 RateForTraining::get_table_name()
