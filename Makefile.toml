@@ -15,7 +15,7 @@ category = "MyCommand"
 workspace = false
 command = "cargo"
 args = ["run", "-p", "rate-gateway"]
-env = { "PORT" = "18080" }
+env = { "SERVER_PORT" = "18080" }
 
 [tasks.run_training_batch]
 description = "Run training-batch"

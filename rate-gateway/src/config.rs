@@ -2,13 +2,21 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    host: String,
-    port: i32,
+    // サーバー関連
+    pub server_host: String,
+    pub server_port: i32,
+
+    // DB関連
+    pub db_host: String,
+    pub db_port: u16,
+    pub db_name: String,
+    pub db_user_name: String,
+    pub db_password: String,
 }
 
 impl Config {
     pub fn get_address(&self) -> String {
-        format!("{}:{}", self.host, self.port)
+        format!("{}:{}", self.server_host, self.server_port)
     }
 }
 
@@ -19,8 +27,13 @@ mod tests {
     #[test]
     fn test_for_get_address() {
         let config = Config {
-            host: "127.0.0.1".to_string(),
-            port: 8888,
+            server_host: "127.0.0.1".to_string(),
+            server_port: 8888,
+            db_host: "dummy_host".to_string(),
+            db_port: 3306,
+            db_name: "dummy_db".to_string(),
+            db_user_name: "dummy_user".to_string(),
+            db_password: "dummy_password".to_string(),
         };
         assert_eq!(config.get_address(), "127.0.0.1:8888".to_string());
     }

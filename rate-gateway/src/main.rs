@@ -1,3 +1,6 @@
+extern crate common_lib;
+extern crate rate_gateway_lib;
+
 use log::{error, info};
 
 mod config;
