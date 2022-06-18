@@ -3,7 +3,6 @@ services:
   db:
     image: mariadb:10.8
     container_name: bin-option-db
-    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: T4g5Ucs6
       MYSQL_DATABASE: bin-option
