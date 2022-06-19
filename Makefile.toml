@@ -38,6 +38,7 @@ category = "MyCommand"
 workspace = false
 command = "cargo"
 args = ["run", "-p", "data-clean-batch"]
+env = { "EXPIRE_DATE_COUNT" = "30" }
 
 
 [tasks.generate_rate_gateway_lib]

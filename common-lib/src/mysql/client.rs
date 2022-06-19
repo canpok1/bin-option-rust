@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use mysql::{params, prelude::Queryable, OptsBuilder, Pool, PooledConn, TxOpts, Transaction};
+use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction};
 
 use crate::error::MyResult;
 
