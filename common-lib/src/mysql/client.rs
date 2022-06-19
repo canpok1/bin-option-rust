@@ -43,18 +43,22 @@ impl DefaultClient {
 
 impl Client for DefaultClient
 {
-    /// # Example
-    /// ```
-    /// match client.with_transaction(
-    ///     |tx| -> MyResult<()> {
-    ///         // 任意のDB操作
-    ///         Ok(())
-    ///     }
-    /// ) {
-    ///     Ok(_) => { }
-    ///     Err(err) => { }
-    /// };
-    /// ```
+    // sample
+    // ```
+    // use crate::common_lib::error::MyResult;
+    // use crate::common_lib::mysql::client::DefaultClient;
+    // use crate::common_lib::mysql::client::Client;
+    // 
+    // fn main() -> MyResult<()> {
+    //     let client = DefaultClient::new("user", "pass", "127.0.0.1", 3306, "db")?;
+    //     client.with_transaction(
+    //         |tx| -> MyResult<()> {
+    //             // 任意のDB操作
+    //             Ok(())
+    //         }
+    //     )
+    // }
+    // ```
     fn with_transaction<F>(&self, f: F) -> MyResult<()>
     where
         F: Fn(&mut Transaction) -> MyResult<()>
