@@ -10,7 +10,17 @@ services:
     env_file:
       - local.env
     networks:
-      - default
+      - trading-bot-network
+  rate-gateway:
+    container_name: bin-option-rate-gateway
+    build:
+      context: .
+      dockerfile: build/Dockerfile-rate-gateway
+    ports:
+      - "8081:80"
+    env_file:
+      - local.env
+    networks:
       - trading-bot-network
 networks:
   trading-bot-network:
