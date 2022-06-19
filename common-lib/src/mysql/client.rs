@@ -47,12 +47,12 @@ impl Client for DefaultClient
     /// ```
     /// match client.with_transaction(
     ///     |tx| -> MyResult<()> {
-    ///         tx.exec_batch(...)?;
+    ///         // 任意のDB操作
     ///         Ok(())
     ///     }
     /// ) {
-    ///     Ok(_) => { ... }
-    ///     Err(err) => { ... }
+    ///     Ok(_) => { }
+    ///     Err(err) => { }
     /// };
     /// ```
     fn with_transaction<F>(&self, f: F) -> MyResult<()>
