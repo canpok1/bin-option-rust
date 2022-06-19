@@ -1,0 +1,11 @@
+version: "3"
+services:
+  flyway:
+    container_name: bin-option-flyway
+    build:
+      context: .
+      dockerfile: build/Dockerfile-flyway
+    volumes:
+      - ./build/ddl:/flyway/sql
+    env_file:
+      - local.env

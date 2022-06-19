@@ -1,0 +1,9 @@
+FROM flyway/flyway
+
+ENV DB_HOST=localhost \
+    DB_PORT=3306 \
+    DB_NAME=sample \
+    DB_USER_NAME=dummy-user \
+    DB_PASSWORD=xxxxx
+
+ENTRYPOINT ["/bin/sh", "-c", "flyway -url=jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME -user=$DB_USER_NAME -password=$DB_PASSWORD -connectRetries=60 migrate"]

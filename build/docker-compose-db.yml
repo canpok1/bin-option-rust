@@ -12,13 +12,5 @@ services:
       - bin-option-db-store:/var/lib/mysql
     ports:
       - "13306:3306"
-  flyway:
-    image: flyway/flyway
-    container_name: bin-option-flyway
-    command: -url=jdbc:mysql://db/bin-option -user=root -password=T4g5Ucs6 -connectRetries=60 migrate
-    volumes:
-      - ./ddl:/flyway/sql
-    depends_on:
-      - db
 volumes:
   bin-option-db-store:
