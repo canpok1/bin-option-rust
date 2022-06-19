@@ -40,6 +40,7 @@ jobs:
         with:
           dockerfile: ./build/Dockerfile-rate-gateway
           tags: ghcr.io/${{ github.repository }}/rate-gateway:latest
+          github_password: ${{ secrets.GITHUB_TOKEN }}
 
   build_data_clean_batch:
     name: Build DataCleanBatch
@@ -56,3 +57,4 @@ jobs:
         with:
           dockerfile: ./build/Dockerfile-data-clean-batch
           tags: ghcr.io/${{ github.repository }}/data-clean-batch:latest
+          github_password: ${{ secrets.GITHUB_TOKEN }}

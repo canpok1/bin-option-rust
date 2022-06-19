@@ -5,6 +5,9 @@ inputs:
   tags:
     description: "tags for container image"
     required: true
+  github_password:
+    description: "github login password"
+    required: true
 
 runs:
   using: "composite"
@@ -26,7 +29,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ inputs.github_password }}
     - name: Build container image
       uses: docker/build-push-action@v2
       with:
