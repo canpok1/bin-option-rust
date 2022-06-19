@@ -12,5 +12,11 @@ services:
       - bin-option-db-store:/var/lib/mysql
     ports:
       - "13306:3306"
+    networks:
+      - default
+      - trading-bot-network
 volumes:
   bin-option-db-store:
+networks:
+  trading-bot-network:
+    name: trading-bot-network

@@ -9,3 +9,10 @@ services:
       - ./build/ddl:/flyway/sql
     env_file:
       - local.env
+    networks:
+      - default
+      - trading-bot-network
+networks:
+  trading-bot-network:
+    external:
+      name: trading-bot-network
