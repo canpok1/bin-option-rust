@@ -22,6 +22,15 @@ services:
       - local.env
     networks:
       - trading-bot-network
+  data-clean-batch:
+    container_name: bin-option-data-clean-batch
+    build:
+      context: .
+      dockerfile: build/Dockerfile-data-clean-batch
+    env_file:
+      - local.env
+    networks:
+      - trading-bot-network
 networks:
   trading-bot-network:
     external:
