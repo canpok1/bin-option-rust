@@ -5,7 +5,7 @@ services:
     container_name: bin-option-db
     environment:
       MYSQL_ROOT_PASSWORD: T4g5Ucs6
-      MYSQL_DATABASE: bin-option
+      MYSQL_DATABASE: binopt
       MYSQL_USER: bot
       MYSQL_PASSWORD: P@ssw0rd
     volumes:
