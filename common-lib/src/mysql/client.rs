@@ -1,16 +1,18 @@
 use chrono::NaiveDateTime;
-use mysql::{params, prelude::Queryable, OptsBuilder, Pool, PooledConn};
+use mysql::{params, prelude::Queryable, OptsBuilder, Pool, PooledConn, TxOpts, Transaction};
 
 use crate::error::MyResult;
 
 use super::model::RateForTraining;
 
-pub trait Client<T>
-where
-    T: Queryable,
+pub trait Client
 {
-    fn insert_rates_for_training(&self, tx: &mut T, rates: &Vec<RateForTraining>) -> MyResult<()>;
-    fn delete_old_rates_for_training(&self, tx: &mut T, border: &NaiveDateTime) -> MyResult<()>;
+    fn with_transaction<F>(&self, f: F) -> MyResult<()>
+    where
+        F: Fn(&mut Transaction) -> MyResult<()>
+    ;
+    fn insert_rates_for_training(&self, tx: &mut Transaction, rates: &Vec<RateForTraining>) -> MyResult<()>;
+    fn delete_old_rates_for_training(&self, tx: &mut Transaction, border: &NaiveDateTime) -> MyResult<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -37,20 +39,44 @@ impl DefaultClient {
             pool: Pool::new(opts)?,
         })
     }
-
-    pub fn get_conn(&self) -> MyResult<PooledConn> {
-        match self.pool.get_conn() {
-            Ok(v) => Ok(v),
-            Err(e) => Err(Box::new(e)),
-        }
-    }
 }
 
-impl<T> Client<T> for DefaultClient
-where
-    T: Queryable,
+impl Client for DefaultClient
 {
-    fn insert_rates_for_training(&self, tx: &mut T, rates: &Vec<RateForTraining>) -> MyResult<()> {
+    /// # Example
+    /// ```
+    /// match client.with_transaction(
+    ///     |tx| -> MyResult<()> {
+    ///         tx.exec_batch(...)?;
+    ///         Ok(())
+    ///     }
+    /// ) {
+    ///     Ok(_) => { ... }
+    ///     Err(err) => { ... }
+    /// };
+    /// ```
+    fn with_transaction<F>(&self, f: F) -> MyResult<()>
+    where
+        F: Fn(&mut Transaction) -> MyResult<()>
+    {
+        match self.pool.get_conn()?.start_transaction(TxOpts::default()) {
+            Ok(mut tx) => match f(&mut tx) {
+                Ok(_) => {
+                    if let Err(err) = tx.commit() {
+                        Err(Box::new(err))
+                    } else {
+                        Ok(())
+                    }
+                }
+                Err(err) => {
+                    Err(err)
+                }
+            },
+            Err(err) => Err(Box::new(err)),
+        }
+    }
+
+    fn insert_rates_for_training(&self, tx: &mut Transaction, rates: &Vec<RateForTraining>) -> MyResult<()> {
         tx.exec_batch(
             format!(
                 "INSERT INTO {} (pair, recorded_at, rate) VALUES (:pair, :recorded_at, :rate);",
@@ -68,7 +94,7 @@ where
         Ok(())
     }
 
-    fn delete_old_rates_for_training(&self, tx: &mut T, border: &NaiveDateTime) -> MyResult<()> {
+    fn delete_old_rates_for_training(&self, tx: &mut Transaction, border: &NaiveDateTime) -> MyResult<()> {
         tx.exec_drop(
             format!(
                 "DELETE FROM {} WHERE recorded_at < :border;",

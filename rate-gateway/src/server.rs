@@ -5,12 +5,11 @@ use rate_gateway_lib::{
 };
 
 use async_trait::async_trait;
-use common_lib::mysql::{self as my_mysql, client::Client};
+use common_lib::{mysql::{self, client::Client}, error::MyResult};
 use log::info;
-use mysql::TxOpts;
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
 
-pub async fn run(addr: &str, mysql_cli: my_mysql::client::DefaultClient) {
+pub async fn run(addr: &str, mysql_cli: mysql::client::DefaultClient) {
     let addr = addr.parse().expect("Failed to parse bind address");
 
     let server = Server::new(mysql_cli);
@@ -30,11 +29,11 @@ pub async fn run(addr: &str, mysql_cli: my_mysql::client::DefaultClient) {
 
 #[derive(Clone)]
 pub struct Server {
-    mysql_cli: my_mysql::client::DefaultClient,
+    mysql_cli: mysql::client::DefaultClient,
 }
 
 impl Server {
-    pub fn new(mysql_cli: my_mysql::client::DefaultClient) -> Self {
+    pub fn new(mysql_cli: mysql::client::DefaultClient) -> Self {
         Server {
             mysql_cli: mysql_cli,
         }
@@ -63,7 +62,7 @@ where
 
         let rates = rates
             .iter()
-            .map(|rate| my_mysql::model::RateForTraining::new(&pair, &rate.time, rate.value))
+            .map(|rate| mysql::model::RateForTraining::new(&pair, &rate.time, rate.value))
             .collect();
         if let Err(err) = rates {
             return Ok(RatesPairPostResponse::Status400(models::Error {
@@ -72,31 +71,21 @@ where
         }
         let rates = rates.unwrap();
 
-        let error_message: String = match self.mysql_cli.get_conn() {
-            Ok(mut conn) => match conn.start_transaction(TxOpts::default()) {
-                Ok(mut tx) => match self.mysql_cli.insert_rates_for_training(&mut tx, &rates) {
-                    Ok(_) => {
-                        tx.commit();
-                        "".to_string()
-                    }
-                    Err(err) => {
-                        tx.rollback();
-                        format!("internal server error, {}", err)
-                    }
-                },
-                Err(err) => format!("internal server error, {}", err),
-            },
-            Err(err) => format!("internal server error, {}", err),
-        };
-
-        if error_message == "" {
-            Ok(RatesPairPostResponse::Status201(PostSuccess {
-                count: rates.len() as i64,
-            }))
-        } else {
-            Ok(RatesPairPostResponse::Status500(models::Error {
-                message: error_message,
-            }))
+        match self.mysql_cli.with_transaction(
+            |tx| -> MyResult<()> {
+                self.mysql_cli.insert_rates_for_training(tx, &rates)
+            }
+        ) {
+            Ok(_) => {
+                Ok(RatesPairPostResponse::Status201(PostSuccess {
+                    count: rates.len() as i64,
+                }))
+            }
+            Err(err) => {
+                Ok(RatesPairPostResponse::Status500(models::Error {
+                    message: format!("internal server error, {}", err),
+                }))
+            }
         }
     }
 }
