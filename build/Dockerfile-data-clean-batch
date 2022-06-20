@@ -3,7 +3,8 @@ WORKDIR /usr/src/myapp
 COPY . .
 RUN cargo build -p data-clean-batch --release
 
-FROM rust:latest
+FROM debian:bullseye-slim
 ENV EXPIRE_DATE_COUNT=30
+ENV RUST_LOG=debug
 COPY --from=builder /usr/src/myapp/target/release/data-clean-batch /usr/local/bin/
 CMD ["data-clean-batch"]
