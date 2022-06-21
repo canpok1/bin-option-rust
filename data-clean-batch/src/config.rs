@@ -11,4 +11,5 @@ pub struct Config {
 
     // バッチ関連
     pub expire_date_count: i64,
+    pub cron_schedule: String,
 }

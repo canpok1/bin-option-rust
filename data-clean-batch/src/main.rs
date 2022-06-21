@@ -2,6 +2,8 @@ extern crate common_lib;
 
 use chrono::{Utc, Duration};
 use common_lib::{mysql::{self, client::Client}, error::MyResult};
+use config::Config;
+use job_scheduler::{Job, JobScheduler};
 use log::{error, info};
 
 mod config;
@@ -10,9 +12,7 @@ fn init_logger() {
     env_logger::init();
 }
 
-
-#[tokio::main]
-async fn main() {
+fn main() {
     init_logger();
 
     let config: config::Config;
@@ -43,6 +43,26 @@ async fn main() {
         }
     }
 
+    if let Err(err) = start_scheduler(&config, &mysql_cli) {
+        error!("failed to start scheduler, error: {}", err);
+    }
+}
+
+fn start_scheduler(config: &Config, mysql_cli: &mysql::client::DefaultClient) -> MyResult<()> {
+    let mut sched = JobScheduler::new();
+
+    info!("set cron schedule: {}", &config.cron_schedule);
+    sched.add(Job::new(config.cron_schedule.parse()?, || {
+        run(&config, &mysql_cli);
+    }));
+
+    loop {
+        sched.tick();
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+}
+
+fn run(config: &Config, mysql_cli: &mysql::client::DefaultClient) {
     info!("start DataCleanBatch, expire_date:{}", config.expire_date_count);
 
     let border = (Utc::now() - Duration::days(config.expire_date_count)).naive_utc();

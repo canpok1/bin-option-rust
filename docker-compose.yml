@@ -21,6 +21,8 @@ services:
       - trading-bot-network
   data-clean-batch:
     image: ghcr.io/canpok1/bin-option-rust/data-clean-batch:latest
+    environment:
+      - CRON_SCHEDULE=0 0 15 * * *
     env_file:
       - local.env
     networks:
