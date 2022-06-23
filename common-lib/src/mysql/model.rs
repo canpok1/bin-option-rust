@@ -5,7 +5,7 @@ use crate::error::{MyError, MyResult};
 #[derive(Debug, Clone)]
 pub struct RateForTraining {
     pub pair: String,
-    pub recored_at: chrono::NaiveDateTime,
+    pub recorded_at: chrono::NaiveDateTime,
     pub rate: f64,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -28,7 +28,7 @@ impl RateForTraining {
         }
         Ok(RateForTraining {
             pair: pair.to_string(),
-            recored_at: recored_at,
+            recorded_at: recored_at,
             rate: rate,
             created_at: NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0),
             updated_at: NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0),

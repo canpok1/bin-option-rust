@@ -9,10 +9,11 @@ pub trait Client
 {
     fn with_transaction<F>(&self, f: F) -> MyResult<()>
     where
-        F: Fn(&mut Transaction) -> MyResult<()>
+        F: FnMut(&mut Transaction) -> MyResult<()>
     ;
     fn insert_rates_for_training(&self, tx: &mut Transaction, rates: &Vec<RateForTraining>) -> MyResult<()>;
     fn delete_old_rates_for_training(&self, tx: &mut Transaction, border: &NaiveDateTime) -> MyResult<()>;
+    fn select_rates_for_training(&self, tx: &mut Transaction, pair: &str, begin: Option<NaiveDateTime>, end: Option<NaiveDateTime>) -> MyResult<Vec<RateForTraining>>;
 }
 
 #[derive(Clone, Debug)]
@@ -59,9 +60,9 @@ impl Client for DefaultClient
     //     )
     // }
     // ```
-    fn with_transaction<F>(&self, f: F) -> MyResult<()>
+    fn with_transaction<F>(&self, mut f: F) -> MyResult<()>
     where
-        F: Fn(&mut Transaction) -> MyResult<()>
+        F: FnMut(&mut Transaction) -> MyResult<()>
     {
         match self.pool.get_conn()?.start_transaction(TxOpts::default()) {
             Ok(mut tx) => match f(&mut tx) {
@@ -89,7 +90,7 @@ impl Client for DefaultClient
             rates.iter().map(|rate| {
                 params! {
                     "pair" => &rate.pair,
-                    "recorded_at" => rate.recored_at.format("%Y-%m-%d %H:%M:%S").to_string(),
+                    "recorded_at" => rate.recorded_at.format("%Y-%m-%d %H:%M:%S").to_string(),
                     "rate" => &rate.rate,
                 }
             }),
@@ -110,5 +111,38 @@ impl Client for DefaultClient
         )?;
 
         Ok(())
+    }
+
+    fn select_rates_for_training(&self, tx: &mut Transaction, pair: &str, begin: Option<NaiveDateTime>, end: Option<NaiveDateTime>) -> MyResult<Vec<RateForTraining>> {
+        let mut conditions:Vec<String> = vec![];
+        if let Some(value) = begin {
+            conditions.push(format!("recorded_at >= '{}'", value.format("%Y-%m-%d %H:%M:%S")));
+        }
+        if let Some(value) = end {
+            conditions.push(format!("recorded_at <= '{}'", value.format("%Y-%m-%d %H:%M:%S")));
+        }
+        let mut where_str = format!("WHERE pair = '{}'", pair);
+        if !conditions.is_empty() {
+            where_str = format!("{} AND {}", where_str, conditions.join(" "));
+        };
+
+        let query = format!(
+            "SELECT pair, recorded_at, rate, created_at, updated_at FROM {} {} ORDER BY recorded_at ASC",
+            RateForTraining::get_table_name(),
+            where_str,
+        );
+        let result = tx.query_map(
+            query,
+            |(pair, recorded_at, rate, created_at, updated_at)| {
+                RateForTraining {
+                    pair,
+                    recorded_at,
+                    rate,
+                    created_at,
+                    updated_at,
+                }
+            },
+        );
+        Ok(result?)
     }
 }
