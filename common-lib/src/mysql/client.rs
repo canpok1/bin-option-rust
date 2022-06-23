@@ -123,7 +123,7 @@ impl Client for DefaultClient
         }
         let mut where_str = format!("WHERE pair = '{}'", pair);
         if !conditions.is_empty() {
-            where_str = format!("{} AND {}", where_str, conditions.join(" "));
+            where_str = format!("{} AND {}", where_str, conditions.join(" AND "));
         };
 
         let query = format!(
@@ -131,6 +131,8 @@ impl Client for DefaultClient
             RateForTraining::get_table_name(),
             where_str,
         );
+        log::debug!("query: {}", query);
+
         let result = tx.query_map(
             query,
             |(pair, recorded_at, rate, created_at, updated_at)| {

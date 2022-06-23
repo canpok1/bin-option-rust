@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4"
+log = "0.4.0"
 mysql = "20.1"
 thiserror = "1.0"

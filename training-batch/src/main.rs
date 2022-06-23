@@ -1,5 +1,6 @@
+use chrono::{Duration, Utc};
 use common_lib::{error::MyResult, mysql::{self, client::{DefaultClient, Client}}};
-use log::{error, info};
+use log::{error, info, warn, debug};
 use smartcore::{linalg::{naive::dense_matrix::DenseMatrix}, model_selection::{train_test_split}, ensemble::random_forest_regressor::RandomForestRegressor, metrics::{mean_squared_error}};
 
 mod config;
@@ -52,22 +53,38 @@ fn main() {
 
 fn training(mysql_cli: &DefaultClient) -> MyResult<()> {
     let test_data_size = 50;
-    let test_data_count = 500;
     let mut x:Vec<Vec<f64>> = vec![];
     let mut y:Vec<f64> = vec![];
 
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
-        let rates = mysql_cli.select_rates_for_training( tx, "USDJPY", None, None)?;
-        for offset in 0..test_data_count {
-            let mut rate:Vec<f64> = vec![];
-            for index in 0..test_data_size {
-                rate.push(rates[index + offset].rate.clone());
+        let end = Utc::now().naive_utc();
+        let begin = (Utc::now() - Duration::hours(10)).naive_utc();
+
+        debug!("fetch rates. begin:{}, end:{}", begin, end);
+
+        let rates = mysql_cli.select_rates_for_training(tx, "USDJPY", Some(begin), Some(end))?;
+        debug!("fetched rates count: {}", rates.len());
+
+        for offset in 0..rates.len() {
+            let truth = rates.get(offset + test_data_size - 1 + 5);
+            if truth.is_none() {
+                break;
             }
-            x.push(rate);
-            y.push(rates[test_data_size + offset + 5].rate);
+            y.push(truth.unwrap().rate);
+
+            let mut data:Vec<f64> = vec![];
+            for index in offset..offset+test_data_size {
+                data.push(rates[index].rate.clone());
+            }
+            x.push(data);
         }
         Ok(())
     })?;
+    if x.len() < 10 {
+        warn!("training data is too little. skip training. count:{}", x.len());
+        return Ok(());
+    }
+
     let matrix = DenseMatrix::from_2d_vec(&x);
 
     let mut best_model:Option<RandomForestRegressor<_>> = None;
@@ -96,7 +113,10 @@ fn training(mysql_cli: &DefaultClient) -> MyResult<()> {
     let best_model = best_model.unwrap();
     let y_hat = best_model.predict(&x_test)?;
     for row in 0..y_test.len() {
-        info!("[no{}] want: {}, got: {}", row+1, y_test[row], y_hat[row]);
+        let want = y_test[row];
+        let got = y_hat[row];
+        let diff = want - got;
+        info!("[no{:02}] want: {:.4}, got: {:.4}, diff: {:.4}", row+1, want, got, diff);
     }
 
     Ok(())

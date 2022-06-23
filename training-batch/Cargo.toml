@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 common-lib = { path = "../common-lib" }
 
+chrono = "0.4"
 env_logger = "0.8.3"
 envy = "0.4"
 log = "0.4.0"
