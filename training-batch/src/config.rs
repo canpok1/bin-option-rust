@@ -1,0 +1,11 @@
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+pub struct Config {
+    // DB関連
+    pub db_host: String,
+    pub db_port: u16,
+    pub db_name: String,
+    pub db_user_name: String,
+    pub db_password: String,
+}

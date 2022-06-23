@@ -6,3 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+common-lib = { path = "../common-lib" }
+
+env_logger = "0.8.3"
+envy = "0.4"
+log = "0.4.0"
+serde = { version = "1.0", features = ["derive"] }
+smartcore = "0.2"
