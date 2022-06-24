@@ -31,7 +31,7 @@ services:
   training-batch:
     image: ghcr.io/canpok1/bin-option-rust/training-batch:latest
     environment:
-      - CRON_SCHEDULE=0 0 16 * * *
+      - CRON_SCHEDULE=0 0 16 * * Mon,Tue,Wed,Thu,Fri
     env_file:
       - local.env
     networks:
