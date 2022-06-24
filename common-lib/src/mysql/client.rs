@@ -1,9 +1,10 @@
 use chrono::NaiveDateTime;
 use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction};
 
-use crate::error::MyResult;
+use crate::{error::MyResult, domain::model::{RateForTraining, ForecastModel}};
 
-use super::model::{RateForTraining, ForecastModel};
+static TABLE_NAME_RATE_FOR_TRAINING:&str = "rates_for_training";
+static TABLE_NAME_FORECAST_MODEL:&str = "forecast_models";
 
 pub trait Client
 {
@@ -89,7 +90,7 @@ impl Client for DefaultClient
         tx.exec_batch(
             format!(
                 "INSERT INTO {} (pair, recorded_at, rate) VALUES (:pair, :recorded_at, :rate);",
-                RateForTraining::get_table_name()
+                TABLE_NAME_RATE_FOR_TRAINING
             ),
             rates.iter().map(|rate| {
                 params! {
@@ -107,7 +108,7 @@ impl Client for DefaultClient
         tx.exec_drop(
             format!(
                 "DELETE FROM {} WHERE recorded_at < :border;",
-                RateForTraining::get_table_name()
+                TABLE_NAME_RATE_FOR_TRAINING
             ),
             params! {
                 "border" => border.format("%Y-%m-%d %H:%M:%S").to_string(),
@@ -132,7 +133,7 @@ impl Client for DefaultClient
 
         let query = format!(
             "SELECT pair, recorded_at, rate, created_at, updated_at FROM {} {} ORDER BY recorded_at ASC",
-            RateForTraining::get_table_name(),
+            TABLE_NAME_RATE_FOR_TRAINING,
             where_str,
         );
         log::debug!("query: {}", query);
@@ -156,7 +157,7 @@ impl Client for DefaultClient
     fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()> {
         let q = format!(
             "INSERT INTO {} (pair, model_no, model_data, memo) VALUES (:pair, :no, :data, :memo) ON DUPLICATE KEY UPDATE model_data = :data, memo = :memo;",
-            ForecastModel::get_table_name(),
+            TABLE_NAME_FORECAST_MODEL
         );
         let p = params! {
             "pair" => &m.pair,
@@ -174,7 +175,7 @@ impl Client for DefaultClient
     fn select_forecast_model(&self, tx: &mut Transaction, pair: &str, no:i32) -> MyResult<Option<ForecastModel>> {
         let q = format!(
             "SELECT pair, model_no, model_data, memo, created_at, updated_at FROM {} WHERE pair = :pair AND model_no = :no",
-            ForecastModel::get_table_name()
+            TABLE_NAME_FORECAST_MODEL
         );
         let p = params! {
             "pair" => pair,

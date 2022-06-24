@@ -3,9 +3,12 @@ use rate_gateway_lib::{
     server::MakeService,
     Api, RatesPairPostResponse,
 };
-
 use async_trait::async_trait;
-use common_lib::{mysql::{self, client::Client}, error::MyResult};
+use common_lib::{
+    mysql::{self, client::Client},
+    error::MyResult,
+    domain
+};
 use log::info;
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
 
@@ -62,7 +65,7 @@ where
 
         let rates = rates
             .iter()
-            .map(|rate| mysql::model::RateForTraining::new(&pair, &rate.time, rate.value))
+            .map(|rate| domain::model::RateForTraining::new(&pair, &rate.time, rate.value))
             .collect();
         if let Err(err) = rates {
             return Ok(RatesPairPostResponse::Status400(models::Error {

@@ -34,10 +34,6 @@ impl RateForTraining {
             updated_at: NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0),
         })
     }
-
-    pub fn get_table_name() -> String {
-        "rates_for_training".to_string()
-    }
 }
 
 
@@ -62,9 +58,5 @@ impl ForecastModel {
             created_at: dummy.clone(),
             updated_at: dummy.clone(),
         })
-    }
-
-    pub fn get_table_name() -> String {
-        "forecast_models".to_string()
     }
 }

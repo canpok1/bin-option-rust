@@ -1,13 +1,18 @@
 use chrono::{Duration, Utc};
-use common_lib::{error::MyResult, mysql::{self, client::{DefaultClient, Client}, model::ForecastModel}};
+use common_lib::{
+    error::MyResult,
+    mysql::{
+        self,
+        client::{DefaultClient, Client},
+    },
+    domain::model::ForecastModel
+};
 use log::{error, info, warn, debug};
 use smartcore::{
-    linalg::{
-        naive::dense_matrix::DenseMatrix
-    },
-    model_selection::{train_test_split},
+    linalg::naive::dense_matrix::DenseMatrix,
+    model_selection::train_test_split,
     ensemble::random_forest_regressor::*,
-    metrics::{mean_squared_error}
+    metrics::mean_squared_error
 };
 
 mod config;
