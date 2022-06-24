@@ -7,6 +7,7 @@ FROM debian:bullseye-slim
 ENV CRON_SCHEDULE="0 0 16 * * *"
 ENV TRAINING_COUNT=10
 ENV TRAINING_DATA_REQUIRED_COUNT=10
+ENV FORECAST_MODEL_NO=1
 ENV RUST_LOG=debug
 COPY --from=builder /usr/src/myapp/target/release/training-batch /usr/local/bin/
 CMD ["training-batch"]
