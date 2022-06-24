@@ -81,13 +81,13 @@ fn start_scheduler(config: &config::Config, mysql_cli: &mysql::client::DefaultCl
 }
 
 fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
-    let mut x:Vec<Vec<f64>> = vec![];
-    let mut y:Vec<f64> = vec![];
+    let mut org_x:Vec<Vec<f64>> = vec![];
+    let mut org_y:Vec<f64> = vec![];
     let mut existing_model:Option<ForecastModel> = None;
 
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
         let end = Utc::now().naive_utc();
-        let begin = (Utc::now() - Duration::hours(10)).naive_utc();
+        let begin = (Utc::now() - Duration::hours(config.training_data_range_hour)).naive_utc();
 
         debug!("fetch rates. begin:{}, end:{}", begin, end);
 
@@ -99,25 +99,26 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             if truth.is_none() {
                 break;
             }
-            y.push(truth.unwrap().rate);
+            org_y.push(truth.unwrap().rate);
 
             let mut data:Vec<f64> = vec![];
             for index in offset..offset+config.forecast_input_size {
                 data.push(rates[index].rate.clone());
             }
-            x.push(data);
+            org_x.push(data);
         }
 
         existing_model = mysql_cli.select_forecast_model(tx, &config.currency_pair, 0)?;
 
         Ok(())
     })?;
-    if x.len() < config.training_data_required_count {
-        warn!("training data is too little. skip training. count:{}", x.len());
+    if org_x.len() < config.training_data_required_count {
+        warn!("training data is too little. skip training. count:{}", org_x.len());
         return Ok(());
     }
 
-    let matrix = DenseMatrix::from_2d_vec(&x);
+    let matrix = DenseMatrix::from_2d_vec(&org_x);
+    let (train_base_x, test_x, train_base_y, test_y) = train_test_split(&matrix, &org_y, 0.2, true);
 
     let mut best_model:Option<RandomForestRegressor<_>> = None;
     let mut best_mne:Option<f64> = None;
@@ -125,10 +126,8 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
     if let Some(m) = existing_model {
         let model = bincode::deserialize::<RandomForestRegressor<f64>>(&m.data)?;
 
-        let (_x_train, x_test, _y_train, y_test) = train_test_split(&matrix, &y, 0.2, true);
-
-        let y_hat = model.predict(&x_test)?;
-        let mne = mean_squared_error(&y_test, &y_hat);
+        let y = model.predict(&test_x)?;
+        let mne = mean_squared_error(&test_y, &y);
         info!("MSE Random Forest: {}", mne);
 
         best_model = Some(model);
@@ -136,11 +135,11 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
     }
 
     for _ in 1..config.training_count {
-        let (x_train, x_test, y_train, y_test) = train_test_split(&matrix, &y, 0.2, true);
+        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
 
-        let model = RandomForestRegressor::fit(&x_train, &y_train, Default::default())?;
-        let y_hat = model.predict(&x_test)?;
-        let mne = mean_squared_error(&y_test, &y_hat);
+        let model = RandomForestRegressor::fit(&train_x, &train_y, Default::default())?;
+        let y = model.predict(&test_x)?;
+        let mne = mean_squared_error(&test_y, &y);
         info!("MSE Random Forest: {}", mne);
 
         if best_mne.is_none() || best_mne.unwrap() > mne {
@@ -154,12 +153,11 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         return Ok(());
     }
 
-    let (_x_train, x_test, _y_train, y_test) = train_test_split(&matrix, &y, 0.2, true);
     let best_model = best_model.unwrap();
-    let y_hat = best_model.predict(&x_test)?;
-    for row in 0..y_test.len() {
-        let want = y_test[row];
-        let got = y_hat[row];
+    let y = best_model.predict(&test_x)?;
+    for row in 0..test_y.len() {
+        let want = test_y[row];
+        let got = y[row];
         let diff = want - got;
         info!("[no{:02}] want: {:.4}, got: {:.4}, diff: {:.4}", row+1, want, got, diff);
     }
