@@ -58,3 +58,20 @@ jobs:
           dockerfile: ./build/Dockerfile-data-clean-batch
           tags: ghcr.io/${{ github.repository }}/data-clean-batch:latest
           github_password: ${{ secrets.GITHUB_TOKEN }}
+
+  build_training_batch:
+    name: Build TrainingBatch
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Build image
+        uses: ./.github/actions/build_image
+        with:
+          dockerfile: ./build/Dockerfile-training-batch
+          tags: ghcr.io/${{ github.repository }}/training-batch:latest
+          github_password: ${{ secrets.GITHUB_TOKEN }}

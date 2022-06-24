@@ -31,6 +31,7 @@ category = "MyCommand"
 workspace = false
 command = "cargo"
 args = ["run", "-p", "training-batch"]
+env = { "CRON_SCHEDULE" = "0 1/5 * * * *", "TRAINING_COUNT" = "10", "TRAINING_DATA_REQUIRED_COUNT" = "10", "FORECAST_MODEL_NO" = "1" }
 
 [tasks.run_data_clean_batch]
 description = "Run data-clean-batch"

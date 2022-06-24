@@ -12,6 +12,7 @@ bincode = "1.3"
 chrono = "0.4"
 env_logger = "0.8.3"
 envy = "0.4"
+job_scheduler = "*"
 log = "0.4.0"
 serde = { version = "1.0" }
 smartcore = { version = "0.2.0", features = ["serde"] }

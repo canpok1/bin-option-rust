@@ -28,6 +28,14 @@ services:
       - local.env
     networks:
       - trading-bot-network
+  training-batch:
+    image: ghcr.io/canpok1/bin-option-rust/training-batch:latest
+    environment:
+      - CRON_SCHEDULE=0 0 16 * * *
+    env_file:
+      - local.env
+    networks:
+      - trading-bot-network
 networks:
   trading-bot-network:
     external:
