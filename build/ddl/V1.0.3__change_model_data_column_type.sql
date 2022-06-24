@@ -1,0 +1,1 @@
+ALTER TABLE forecast_models MODIFY COLUMN model_data MEDIUMBLOB NOT NULL COMMENT 'モデルデータ';

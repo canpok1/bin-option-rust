@@ -1,0 +1,11 @@
+CREATE TABLE forecast_models (
+    pair VARCHAR(15) NOT NULL COMMENT '通貨ペア',
+    model_no INTEGER NOT NULL COMMENT 'モデルNo',
+    model_data VARBINARY(10) NOT NULL COMMENT 'モデルデータ',
+    memo TEXT COMMENT 'メモ',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',
+    PRIMARY KEY(pair, model_no)
+)
+COMMENT='予測モデル'
+;

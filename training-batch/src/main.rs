@@ -1,7 +1,14 @@
 use chrono::{Duration, Utc};
-use common_lib::{error::MyResult, mysql::{self, client::{DefaultClient, Client}}};
+use common_lib::{error::MyResult, mysql::{self, client::{DefaultClient, Client}, model::ForecastModel}};
 use log::{error, info, warn, debug};
-use smartcore::{linalg::{naive::dense_matrix::DenseMatrix}, model_selection::{train_test_split}, ensemble::random_forest_regressor::RandomForestRegressor, metrics::{mean_squared_error}};
+use smartcore::{
+    linalg::{
+        naive::dense_matrix::DenseMatrix
+    },
+    model_selection::{train_test_split},
+    ensemble::random_forest_regressor::*,
+    metrics::{mean_squared_error}
+};
 
 mod config;
 
@@ -55,6 +62,7 @@ fn training(mysql_cli: &DefaultClient) -> MyResult<()> {
     let test_data_size = 50;
     let mut x:Vec<Vec<f64>> = vec![];
     let mut y:Vec<f64> = vec![];
+    let mut existing_model:Option<ForecastModel> = None;
 
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
         let end = Utc::now().naive_utc();
@@ -78,6 +86,9 @@ fn training(mysql_cli: &DefaultClient) -> MyResult<()> {
             }
             x.push(data);
         }
+
+        existing_model = mysql_cli.select_forecast_model(tx, "USDJPY", 0)?;
+
         Ok(())
     })?;
     if x.len() < 10 {
@@ -89,6 +100,20 @@ fn training(mysql_cli: &DefaultClient) -> MyResult<()> {
 
     let mut best_model:Option<RandomForestRegressor<_>> = None;
     let mut best_mne:Option<f64> = None;
+
+    if let Some(m) = existing_model {
+        let model = bincode::deserialize::<RandomForestRegressor<f64>>(&m.data)?;
+
+        let (_x_train, x_test, _y_train, y_test) = train_test_split(&matrix, &y, 0.2, true);
+
+        let y_hat = model.predict(&x_test)?;
+        let mne = mean_squared_error(&y_test, &y_hat);
+        info!("MSE Random Forest: {}", mne);
+
+        best_model = Some(model);
+        best_mne = Some(mne);
+    }
+
     for _ in 1..10 {
         let (x_train, x_test, y_train, y_test) = train_test_split(&matrix, &y, 0.2, true);
 
@@ -98,8 +123,7 @@ fn training(mysql_cli: &DefaultClient) -> MyResult<()> {
         info!("MSE Random Forest: {}", mne);
 
         if best_mne.is_none() || best_mne.unwrap() > mne {
-            best_model = Some(model);
-            best_mne = Some(mne);
+            best_model = Some(model); best_mne = Some(mne);
         }
     }
     if let Some(mne) = best_mne {
@@ -118,6 +142,13 @@ fn training(mysql_cli: &DefaultClient) -> MyResult<()> {
         let diff = want - got;
         info!("[no{:02}] want: {:.4}, got: {:.4}, diff: {:.4}", row+1, want, got, diff);
     }
+
+    mysql_cli.with_transaction(|tx| {
+        let bin = bincode::serialize(&best_model)?;
+        let m = ForecastModel::new("USDJPY".to_string(), 0, bin, "test".to_string())?;
+        mysql_cli.upsert_forecast_model(tx, &m)?;
+        Ok(())
+    })?;
 
     Ok(())
 }

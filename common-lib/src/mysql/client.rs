@@ -3,7 +3,7 @@ use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction};
 
 use crate::error::MyResult;
 
-use super::model::RateForTraining;
+use super::model::{RateForTraining, ForecastModel};
 
 pub trait Client
 {
@@ -11,9 +11,13 @@ pub trait Client
     where
         F: FnMut(&mut Transaction) -> MyResult<()>
     ;
+
     fn insert_rates_for_training(&self, tx: &mut Transaction, rates: &Vec<RateForTraining>) -> MyResult<()>;
     fn delete_old_rates_for_training(&self, tx: &mut Transaction, border: &NaiveDateTime) -> MyResult<()>;
     fn select_rates_for_training(&self, tx: &mut Transaction, pair: &str, begin: Option<NaiveDateTime>, end: Option<NaiveDateTime>) -> MyResult<Vec<RateForTraining>>;
+
+    fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()>;
+    fn select_forecast_model(&self, tx: &mut Transaction, pair: &str, no:i32) -> MyResult<Option<ForecastModel>>;
 }
 
 #[derive(Clone, Debug)]
@@ -146,5 +150,49 @@ impl Client for DefaultClient
             },
         );
         Ok(result?)
+    }
+
+
+    fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()> {
+        let q = format!(
+            "INSERT INTO {} (pair, model_no, model_data, memo) VALUES (:pair, :no, :data, :memo) ON DUPLICATE KEY UPDATE model_data = :data, memo = :memo;",
+            ForecastModel::get_table_name(),
+        );
+        let p = params! {
+            "pair" => &m.pair,
+            "no" => m.no,
+            "data" => &m.data,
+            "memo" => &m.memo,
+        };
+        log::debug!("query: {}, pair: {}, no: {}, memo: {}", q, m.pair, m.no, m.memo);
+
+        tx.exec_drop(q,p)?;
+
+        Ok(())
+    }
+
+    fn select_forecast_model(&self, tx: &mut Transaction, pair: &str, no:i32) -> MyResult<Option<ForecastModel>> {
+        let q = format!(
+            "SELECT pair, model_no, model_data, memo, created_at, updated_at FROM {} WHERE pair = :pair AND model_no = :no",
+            ForecastModel::get_table_name()
+        );
+        let p = params! {
+            "pair" => pair,
+            "no" => no,
+        };
+        log::debug!("query: {}, pair: {}, no: {}", q, pair, no);
+
+        if let Some((pair, model_no, model_data, memo, created_at, updated_at)) = tx.exec_first(q, p)? {
+            Ok(Some(ForecastModel{
+                pair,
+                no:model_no,
+                data: model_data,
+                memo,
+                created_at,
+                updated_at,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }

@@ -39,3 +39,32 @@ impl RateForTraining {
         "rates_for_training".to_string()
     }
 }
+
+
+#[derive(Debug, Clone)]
+pub struct ForecastModel {
+    pub pair: String,
+    pub no: i32,
+    pub data: Vec<u8>,
+    pub memo: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl ForecastModel {
+    pub fn new(pair: String, no: i32, data: Vec<u8>, memo: String) -> MyResult<ForecastModel> {
+        let dummy = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
+        Ok(ForecastModel {
+            pair: pair,
+            no: no,
+            data: data,
+            memo: memo,
+            created_at: dummy.clone(),
+            updated_at: dummy.clone(),
+        })
+    }
+
+    pub fn get_table_name() -> String {
+        "forecast_models".to_string()
+    }
+}
