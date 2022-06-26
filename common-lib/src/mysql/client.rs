@@ -1,7 +1,12 @@
 use chrono::NaiveDateTime;
 use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction};
 
-use crate::{error::MyResult, domain::model::{RateForTraining, ForecastModel}};
+use crate::{
+    error::MyResult,
+    domain::model::RateForTraining
+};
+
+use super::model::ForecastModel;
 
 static TABLE_NAME_RATE_FOR_TRAINING:&str = "rates_for_training";
 static TABLE_NAME_FORECAST_MODEL:&str = "forecast_models";

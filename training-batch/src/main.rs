@@ -1,11 +1,10 @@
-use chrono::{Duration, Utc};
+use chrono::{Duration, Utc, NaiveDateTime};
 use common_lib::{
     error::MyResult,
     mysql::{
         self,
-        client::{DefaultClient, Client},
+        client::{DefaultClient, Client}, model::ForecastModel,
     },
-    domain::model::ForecastModel
 };
 use job_scheduler::{JobScheduler, Job};
 use log::{error, info, warn, debug};
@@ -81,48 +80,21 @@ fn start_scheduler(config: &config::Config, mysql_cli: &mysql::client::DefaultCl
 }
 
 fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
-    let mut org_x:Vec<Vec<f64>> = vec![];
-    let mut org_y:Vec<f64> = vec![];
-    let mut existing_model:Option<ForecastModel> = None;
+    let end = Utc::now().naive_utc();
+    let begin = (Utc::now() - Duration::hours(config.training_data_range_hour)).naive_utc();
 
-    mysql_cli.with_transaction(|tx| -> MyResult<()> {
-        let end = Utc::now().naive_utc();
-        let begin = (Utc::now() - Duration::hours(config.training_data_range_hour)).naive_utc();
-
-        debug!("fetch rates. begin:{}, end:{}", begin, end);
-
-        let rates = mysql_cli.select_rates_for_training(tx, &config.currency_pair, Some(begin), Some(end))?;
-        debug!("fetched rates count: {}", rates.len());
-
-        for offset in 0..rates.len() {
-            let truth = rates.get(offset + config.forecast_input_size - 1 + config.forecast_offset_minutes);
-            if truth.is_none() {
-                break;
-            }
-            org_y.push(truth.unwrap().rate);
-
-            let mut data:Vec<f64> = vec![];
-            for index in offset..offset+config.forecast_input_size {
-                data.push(rates[index].rate.clone());
-            }
-            org_x.push(data);
-        }
-
-        existing_model = mysql_cli.select_forecast_model(tx, &config.currency_pair, 0)?;
-
-        Ok(())
-    })?;
+    let (org_x, org_y) = load_data(config, mysql_cli, begin, end)?;
     if org_x.len() < config.training_data_required_count {
         warn!("training data is too little. skip training. count:{}", org_x.len());
         return Ok(());
     }
-
     let matrix = DenseMatrix::from_2d_vec(&org_x);
     let (train_base_x, test_x, train_base_y, test_y) = train_test_split(&matrix, &org_y, 0.2, true);
 
     let mut best_model:Option<RandomForestRegressor<_>> = None;
     let mut best_mne:Option<f64> = None;
 
+    let existing_model = load_existing_model(config, mysql_cli)?;
     if let Some(m) = existing_model {
         let model = bincode::deserialize::<RandomForestRegressor<f64>>(&m.data)?;
 
@@ -162,12 +134,56 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         info!("[no{:02}] want: {:.4}, got: {:.4}, diff: {:.4}", row+1, want, got, diff);
     }
 
+    save_model(config, mysql_cli, &best_model)?;
+
+    Ok(())
+}
+
+fn load_data(config: &config::Config, mysql_cli: &DefaultClient, begin: NaiveDateTime, end: NaiveDateTime) -> MyResult<(Vec<Vec<f64>>, Vec<f64>)> {
+    let mut x:Vec<Vec<f64>> = vec![];
+    let mut y:Vec<f64> = vec![];
+
+    mysql_cli.with_transaction(|tx| -> MyResult<()> {
+        debug!("fetch rates. begin:{}, end:{}", begin, end);
+
+        let rates = mysql_cli.select_rates_for_training(tx, &config.currency_pair, Some(begin), Some(end))?;
+        debug!("fetched rates count: {}", rates.len());
+
+        for offset in 0..rates.len() {
+            let truth = rates.get(offset + config.forecast_input_size - 1 + config.forecast_offset_minutes);
+            if truth.is_none() {
+                break;
+            }
+            y.push(truth.unwrap().rate);
+
+            let mut data:Vec<f64> = vec![];
+            for index in offset..offset+config.forecast_input_size {
+                data.push(rates[index].rate.clone());
+            }
+            x.push(data);
+        }
+
+        Ok(())
+    })?;
+    Ok((x, y))
+}
+
+fn load_existing_model(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<Option<ForecastModel>> {
+    let mut model:Option<ForecastModel> = None;
+    mysql_cli.with_transaction(|tx| -> MyResult<()> {
+        model = mysql_cli.select_forecast_model(tx, &config.currency_pair, 0)?;
+        Ok(())
+    })?;
+    Ok(model)
+}
+
+
+fn save_model(config: &config::Config, mysql_cli: &DefaultClient, model: &RandomForestRegressor<f64>) -> MyResult<()> {
     mysql_cli.with_transaction(|tx| {
-        let bin = bincode::serialize(&best_model)?;
+        let bin = bincode::serialize(model)?;
         let m = ForecastModel::new(config.currency_pair.clone(), config.forecast_model_no, bin, "test".to_string())?;
         mysql_cli.upsert_forecast_model(tx, &m)?;
         Ok(())
     })?;
-
     Ok(())
 }
