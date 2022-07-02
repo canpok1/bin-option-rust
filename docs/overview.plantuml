@@ -25,6 +25,11 @@ node server {
 
     agent ForecastServer
 
+    agent ForecastBatch
+    note left of ForecastBatch
+    定期的に実行
+    end note
+
     agent RateGateway
 
     agent TrainingBatch
@@ -42,10 +47,13 @@ node local {
     agent MT4
 }
 
-models --> ForecastServer
-histories <--> ForecastServer
-forecast <--> ForecastServer
+histories <-- ForecastServer
+forecast --> ForecastServer
 ForecastServer <--> MT4
+
+models --> ForecastBatch
+histories --> ForecastBatch
+forecast <-- ForecastBatch
 
 models <--> TrainingBatch
 rates -->TrainingBatch
