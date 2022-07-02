@@ -1,18 +1,20 @@
 use chrono::{Duration, Utc, NaiveDateTime};
 use common_lib::{
     error::MyResult,
-    mysql::{
-        self,
-        client::{DefaultClient, Client},
-    }, domain::model::ForecastModel,
+    mysql::{self, client::{DefaultClient, Client}},
+    domain::model::ForecastModel,
+    batch,
 };
-use job_scheduler::{JobScheduler, Job};
 use log::{error, info, warn, debug};
 use smartcore::{
     linalg::naive::dense_matrix::DenseMatrix,
     model_selection::train_test_split,
     ensemble::random_forest_regressor::*,
-    metrics::mean_squared_error, neighbors::knn_regressor::{KNNRegressor, KNNRegressorParameters}, math::distance::Distances, linear::{linear_regression::LinearRegression, ridge_regression::{RidgeRegression, RidgeRegressionParameters}, lasso::{LassoParameters, Lasso}, elastic_net::{ElasticNet, ElasticNetParameters}, logistic_regression::LogisticRegression}, svm::{svr::{SVRParameters, SVR}, Kernels}
+    metrics::mean_squared_error,
+    neighbors::knn_regressor::{KNNRegressor, KNNRegressorParameters},
+    math::distance::Distances,
+    linear::{linear_regression::LinearRegression, ridge_regression::{RidgeRegression, RidgeRegressionParameters}, lasso::{LassoParameters, Lasso}, elastic_net::{ElasticNet, ElasticNetParameters}, logistic_regression::LogisticRegression},
+    svm::{svr::{SVRParameters, SVR}, Kernels},
 };
 
 mod config;
@@ -46,18 +48,9 @@ fn main() {
         }
     }
 
-    if let Err(err) = start_scheduler(&config, &mysql_cli) {
-        error!("failed to start scheduler, error: {}", err);
-    }
-}
-
-fn start_scheduler(config: &config::Config, mysql_cli: &mysql::client::DefaultClient) -> MyResult<()> {
-    let mut sched = JobScheduler::new();
-
-    info!("set cron schedule: {}", &config.cron_schedule);
-    sched.add(Job::new(config.cron_schedule.parse()?, || {
+    if let Err(err) = batch::util::start_scheduler(&config.cron_schedule, || {
         info!("start training");
-        match training(config, mysql_cli) {
+        match training(&config, &mysql_cli) {
             Ok(_) => {
                 info!("finished training");
             }
@@ -65,11 +58,8 @@ fn start_scheduler(config: &config::Config, mysql_cli: &mysql::client::DefaultCl
                 error!("failed to training, error:{}", err);
             }
         }
-    }));
-
-    loop {
-        sched.tick();
-        std::thread::sleep(std::time::Duration::from_millis(500));
+    }) {
+        error!("failed to start scheduler, error: {}", err);
     }
 }
 

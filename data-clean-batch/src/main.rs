@@ -1,9 +1,8 @@
 extern crate common_lib;
 
 use chrono::{Utc, Duration};
-use common_lib::{mysql::{self, client::Client}, error::MyResult};
+use common_lib::{mysql::{self, client::Client}, error::MyResult, batch};
 use config::Config;
-use job_scheduler::{Job, JobScheduler};
 use log::{error, info};
 
 mod config;
@@ -37,22 +36,10 @@ fn main() {
         }
     }
 
-    if let Err(err) = start_scheduler(&config, &mysql_cli) {
-        error!("failed to start scheduler, error: {}", err);
-    }
-}
-
-fn start_scheduler(config: &Config, mysql_cli: &mysql::client::DefaultClient) -> MyResult<()> {
-    let mut sched = JobScheduler::new();
-
-    info!("set cron schedule: {}", &config.cron_schedule);
-    sched.add(Job::new(config.cron_schedule.parse()?, || {
+    if let Err(err) = batch::util::start_scheduler(&config.cron_schedule, || {
         run(&config, &mysql_cli);
-    }));
-
-    loop {
-        sched.tick();
-        std::thread::sleep(std::time::Duration::from_millis(500));
+    }) {
+        error!("failed to start scheduler, error: {}", err);
     }
 }
 
