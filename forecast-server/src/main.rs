@@ -27,18 +27,12 @@ async fn main() {
     }
 
     let mysql_cli: mysql::client::DefaultClient;
-    match mysql::client::DefaultClient::new(
-        &config.db_user_name,
-        &config.db_password,
-        &config.db_host,
-        config.db_port,
-        &config.db_name,
-    ) {
+    match mysql::util::make_cli() {
         Ok(cli) => {
             mysql_cli = cli;
         }
         Err(err) => {
-            error!("failed to load config, error: {}", err);
+            error!("failed to make mysql client, error: {}", err);
             return;
         }
     }
