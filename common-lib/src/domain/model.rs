@@ -172,3 +172,28 @@ impl fmt::Display for ForecastModel {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct RateForForecast {
+    pub id: String,
+    pub pair: String,
+    pub histories: Vec<f64>,
+    pub expire: chrono::NaiveDateTime,
+    pub memo: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl RateForForecast {
+    pub fn new(pair: String, histories: Vec<f64>, expire: NaiveDateTime, memo: String) -> MyResult<Self> {
+        Ok(RateForForecast {
+            id: "".to_string(),
+            pair: pair.to_string(),
+            histories: histories,
+            expire: expire,
+            memo: memo,
+            created_at: NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0),
+            updated_at: NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0),
+        })
+    }
+}

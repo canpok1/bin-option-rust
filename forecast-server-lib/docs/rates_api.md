@@ -1,6 +1,6 @@
 # rates_api
 
-All URIs are relative to *http://localhost28080*
+All URIs are relative to *http://localhost:8082*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------

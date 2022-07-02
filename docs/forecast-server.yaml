@@ -5,7 +5,7 @@ info:
   license:
     name: MIT
 servers:
-  - url: http://localhost28080/
+  - url: http://localhost:8082/
 paths:
   /rates:
     post:
@@ -26,11 +26,12 @@ paths:
                 type: object
                 required:
                   - rateId
+                  - expire
                 properties:
                   rateId:
                     description: レート履歴ID
                     type: string
-                  expires:
+                  expire:
                     description: 有効期限
                     type: string
                     format: dateTime

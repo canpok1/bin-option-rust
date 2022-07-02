@@ -1,14 +1,15 @@
 use chrono::NaiveDateTime;
-use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction};
+use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction, Serialized};
 
 use crate::{
     error::{MyResult},
-    domain::model::{RateForTraining, ForecastModel},
+    domain::model::{RateForTraining, ForecastModel, RateForForecast},
     mysql::model::ForecastModelRecord,
 };
 
 static TABLE_NAME_RATE_FOR_TRAINING:&str = "rates_for_training";
 static TABLE_NAME_FORECAST_MODEL:&str = "forecast_models";
+static TABLE_NAME_RATE_FOR_FORECAST:&str = "rates_for_forecast";
 
 
 pub trait Client
@@ -24,6 +25,8 @@ pub trait Client
 
     fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()>;
     fn select_forecast_model(&self, tx: &mut Transaction, pair: &str, no:i32) -> MyResult<Option<ForecastModel>>;
+
+    fn insert_rates_for_forecast(&self, tx: &mut Transaction, rate: &RateForForecast) -> MyResult<String>;
 }
 
 #[derive(Clone, Debug)]
@@ -270,5 +273,23 @@ impl Client for DefaultClient
         } else {
             Ok(None)
         }
+    }
+
+    fn insert_rates_for_forecast(&self, tx: &mut Transaction, rate: &RateForForecast) -> MyResult<String> {
+        let id: Option<String> = tx.query_first("SELECT UUID();")?;
+        tx.exec_drop(
+            format!(
+                "INSERT INTO {} (id, pair, histories, expire, memo) VALUES (:id, :pair, :histories, :expire, :memo);",
+                TABLE_NAME_RATE_FOR_FORECAST
+            ),
+            params! {
+                "id" => &id,
+                "pair" => &rate.pair,
+                "histories" => Serialized(&rate.histories),
+                "expire" => &rate.expire,
+                "memo" => &rate.memo,
+            },
+        )?;
+        Ok(id.unwrap())
     }
 }

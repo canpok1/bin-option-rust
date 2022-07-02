@@ -494,17 +494,16 @@ pub struct RatesPost201Response {
     pub rate_id: String,
 
     /// 有効期限
-    #[serde(rename = "expires")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub expires: Option<String>,
+    #[serde(rename = "expire")]
+    pub expire: String,
 
 }
 
 impl RatesPost201Response {
-    pub fn new(rate_id: String, ) -> RatesPost201Response {
+    pub fn new(rate_id: String, expire: String, ) -> RatesPost201Response {
         RatesPost201Response {
             rate_id: rate_id,
-            expires: None,
+            expire: expire,
         }
     }
 }
@@ -520,10 +519,8 @@ impl std::string::ToString for RatesPost201Response {
         params.push(self.rate_id.to_string());
 
 
-        if let Some(ref expires) = self.expires {
-            params.push("expires".to_string());
-            params.push(expires.to_string());
-        }
+        params.push("expire".to_string());
+        params.push(self.expire.to_string());
 
         params.join(",").to_string()
     }
@@ -540,7 +537,7 @@ impl std::str::FromStr for RatesPost201Response {
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
             pub rate_id: Vec<String>,
-            pub expires: Vec<String>,
+            pub expire: Vec<String>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -558,7 +555,7 @@ impl std::str::FromStr for RatesPost201Response {
             if let Some(key) = key_result {
                 match key {
                     "rateId" => intermediate_rep.rate_id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "expires" => intermediate_rep.expires.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "expire" => intermediate_rep.expire.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing RatesPost201Response".to_string())
                 }
             }
@@ -570,7 +567,7 @@ impl std::str::FromStr for RatesPost201Response {
         // Use the intermediate representation to return the struct
         std::result::Result::Ok(RatesPost201Response {
             rate_id: intermediate_rep.rate_id.into_iter().next().ok_or("rateId missing in RatesPost201Response".to_string())?,
-            expires: intermediate_rep.expires.into_iter().next(),
+            expire: intermediate_rep.expire.into_iter().next().ok_or("expire missing in RatesPost201Response".to_string())?,
         })
     }
 }

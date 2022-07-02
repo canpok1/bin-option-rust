@@ -5,7 +5,7 @@ info:
   title: ForecastServer
   version: 1.0.0
 servers:
-- url: http://localhost28080/
+- url: http://localhost:8082/
 tags:
 - description: レート関連
   name: rates
@@ -132,17 +132,18 @@ components:
     _rates_post_201_response:
       description: 成功時の情報
       example:
-        expires: expires
+        expire: expire
         rateId: rateId
       properties:
         rateId:
           description: レート履歴ID
           type: string
-        expires:
+        expire:
           description: 有効期限
           format: dateTime
           type: string
       required:
+      - expire
       - rateId
       type: object
     _forecast_after5min__rateId__get_200_response:
