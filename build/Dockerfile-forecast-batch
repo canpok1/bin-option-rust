@@ -1,0 +1,9 @@
+FROM rust:latest as builder
+WORKDIR /usr/src/myapp
+COPY . .
+RUN cargo build -p forecast-batch --release
+
+FROM debian:bullseye-slim
+ENV RUST_LOG=debug
+COPY --from=builder /usr/src/myapp/target/release/forecast-batch /usr/local/bin/
+CMD ["forecast-batch"]

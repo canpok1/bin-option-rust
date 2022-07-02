@@ -1,10 +1,11 @@
 [workspace]
 members = [
-    "rate-gateway",
-    "rate-gateway-lib",
-    "forecast-server",
-    "forecast-server-lib",
-    "training-batch",
     "common-lib",
     "data-clean-batch",
+    "forecast-batch",
+    "forecast-server",
+    "forecast-server-lib",
+    "rate-gateway",
+    "rate-gateway-lib",
+    "training-batch",
 ]

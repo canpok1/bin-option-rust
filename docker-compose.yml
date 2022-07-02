@@ -46,6 +46,12 @@ services:
       - local.env
     networks:
       - trading-bot-network
+  forecast-batch:
+    image: ghcr.io/canpok1/bin-option-rust/forecast-batch:latest
+    env_file:
+      - local.env
+    networks:
+      - trading-bot-network
 networks:
   trading-bot-network:
     external:

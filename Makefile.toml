@@ -10,6 +10,13 @@ command = "cargo"
 args = ["build", "-p", "common-lib"]
 
 
+[tasks.run_forecast_batch]
+description = "Run forecast-batch"
+category = "MyCommand"
+workspace = false
+command = "cargo"
+args = ["run", "-p", "forecast-batch"]
+
 [tasks.run_forecast_server]
 description = "Run forecast-server"
 category = "MyCommand"
