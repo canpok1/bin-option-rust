@@ -14,10 +14,12 @@ use common_lib::{
 use log::info;
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
 
-pub async fn run(addr: &str, mysql_cli: mysql::client::DefaultClient) {
+use crate::config;
+
+pub async fn run(addr: &str, mysql_cli: mysql::client::DefaultClient, config: &config::Config) {
     let addr = addr.parse().expect("Failed to parse bind address");
 
-    let server = Server::new(mysql_cli);
+    let server = Server::new(mysql_cli, config);
 
     let service = MakeService::new(server);
 
@@ -35,12 +37,14 @@ pub async fn run(addr: &str, mysql_cli: mysql::client::DefaultClient) {
 #[derive(Clone)]
 pub struct Server {
     mysql_cli: mysql::client::DefaultClient,
+    rate_expire_hour: i64,
 }
 
 impl Server {
-    pub fn new(mysql_cli: mysql::client::DefaultClient) -> Self {
+    pub fn new(mysql_cli: mysql::client::DefaultClient, config: &config::Config) -> Self {
         Server {
             mysql_cli: mysql_cli,
+            rate_expire_hour: config.rate_expire_hour,
         }
     }
 }
@@ -76,7 +80,7 @@ where
             }));
         }
 
-        let expire = (Utc::now() + Duration::hours(12)).naive_utc();
+        let expire = (Utc::now() + Duration::hours(self.rate_expire_hour)).naive_utc();
         let mut id:Option<String> = None;
         match self.mysql_cli.with_transaction(
             |tx| {

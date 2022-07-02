@@ -45,5 +45,5 @@ async fn main() {
 
     let addr = config.get_address();
     info!("start ForecastServer {}", addr);
-    server::run(&addr, mysql_cli).await;
+    server::run(&addr, mysql_cli, &config).await;
 }

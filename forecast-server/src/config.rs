@@ -5,6 +5,7 @@ pub struct Config {
     // サーバー関連
     pub server_host: String,
     pub server_port: i32,
+    pub rate_expire_hour: i64,
 
     // DB関連
     pub db_host: String,
@@ -29,6 +30,7 @@ mod tests {
         let config = Config {
             server_host: "127.0.0.1".to_string(),
             server_port: 8888,
+            rate_expire_hour: 12,
             db_host: "dummy_host".to_string(),
             db_port: 3306,
             db_name: "dummy_db".to_string(),

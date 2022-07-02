@@ -36,6 +36,16 @@ services:
       - local.env
     networks:
       - trading-bot-network
+  forecast-server:
+    image: ghcr.io/canpok1/bin-option-rust/forecast-server:latest
+    ports:
+      - "8082:80"
+    environment:
+      - RATE_EXPIRE_HOUR=12
+    env_file:
+      - local.env
+    networks:
+      - trading-bot-network
 networks:
   trading-bot-network:
     external:

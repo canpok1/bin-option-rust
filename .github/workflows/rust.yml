@@ -75,3 +75,20 @@ jobs:
           dockerfile: ./build/Dockerfile-training-batch
           tags: ghcr.io/${{ github.repository }}/training-batch:latest
           github_password: ${{ secrets.GITHUB_TOKEN }}
+
+  build_forecast_server:
+    name: Build ForecastServer
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Build image
+        uses: ./.github/actions/build_image
+        with:
+          dockerfile: ./build/Dockerfile-forecast-server
+          tags: ghcr.io/${{ github.repository }}/forecast-server:latest
+          github_password: ${{ secrets.GITHUB_TOKEN }}
