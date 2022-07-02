@@ -1,10 +1,9 @@
-# History
+# ForecastAfter5minRateIdGet200Response
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**pair** | **String** | 通貨ペア | 
-**rate_histories** | **Vec<f64>** |  | 
+**result** | [***models::ForecastResult**](ForecastResult.md) |  | [optional] [default to None]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

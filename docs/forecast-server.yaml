@@ -7,7 +7,7 @@ info:
 servers:
   - url: http://localhost28080/
 paths:
-  /histories:
+  /rates:
     post:
       summary: レート履歴を新規登録します
       requestBody:
@@ -25,16 +25,11 @@ paths:
                 description: 成功時の情報
                 type: object
                 required:
-                  - id
-                  - count
+                  - rateId
                 properties:
-                  historyId:
+                  rateId:
                     description: レート履歴ID
                     type: string
-                  count:
-                    description: 登録数
-                    type: integer
-                    format: int64
                   expires:
                     description: 有効期限
                     type: string
@@ -59,11 +54,11 @@ paths:
                 $ref: "#/components/schemas/Error"
       tags:
         - rates
-  /forecast/after5min/{historyId}:
+  /forecast/after5min/{rateId}:
     get:
       summary: 5分後の予想を取得します
       parameters:
-        - name: historyId
+        - name: rateId
           in: path
           required: true
           description: レート履歴ID
@@ -71,7 +66,7 @@ paths:
             type: string
       responses:
         "200":
-          description: 登録成功
+          description: 取得成功
           content:
             application/json:
               schema:
@@ -80,16 +75,16 @@ paths:
                 required:
                   - rate
                 properties:
-                  rate:
-                    $ref: "#/components/schemas/Rate"
+                  result:
+                    $ref: "#/components/schemas/ForecastResult"
         "404":
-          description: 登録失敗（レート情報が見つからない）
+          description: 取得失敗（レート情報が見つからない）
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
         "500":
-          description: 登録失敗（内部エラー）
+          description: 取得失敗（内部エラー）
           content:
             application/json:
               schema:
@@ -98,31 +93,35 @@ paths:
         - rates
 components:
   schemas:
-    Rate:
-      description: レート
+    ForecastResult:
+      description: 予測結果
       type: object
+      required:
+        - complete
       properties:
-        time:
-          description: レートの日時
-          type: string
-          format: dateTime
-        value:
+        complete:
+          description: 予測が完了したか？
+          type: boolean
+        rate:
           description: レートの値
           type: number
           format: double
     History:
       description: レート履歴
       type: object
+      required:
+        - pair
+        - rate_histories
       properties:
         pair:
           description: 通貨ペア
           type: string
           enum:
             - USDJPY
-        rates:
+        rate_histories:
           type: array
           items:
-            description: レートの推移（先頭が過去）
+            description: レートの履歴（先頭が過去）
             type: number
             format: double
     Error:

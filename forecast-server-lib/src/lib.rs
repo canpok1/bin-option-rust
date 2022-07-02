@@ -14,26 +14,26 @@ pub const API_VERSION: &'static str = "1.0.0";
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[must_use]
-pub enum ForecastAfter5minHistoryIdGetResponse {
-    /// 登録成功
+pub enum ForecastAfter5minRateIdGetResponse {
+    /// 取得成功
     Status200
-    (models::ForecastAfter5minHistoryIdGet200Response)
+    (models::ForecastAfter5minRateIdGet200Response)
     ,
-    /// 登録失敗（レート情報が見つからない）
+    /// 取得失敗（レート情報が見つからない）
     Status404
     (models::Error)
     ,
-    /// 登録失敗（内部エラー）
+    /// 取得失敗（内部エラー）
     Status500
     (models::Error)
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[must_use]
-pub enum HistoriesPostResponse {
+pub enum RatesPostResponse {
     /// 登録成功
     Status201
-    (models::HistoriesPost201Response)
+    (models::RatesPost201Response)
     ,
     /// 登録失敗（リクエストパラメータ不備）
     Status400
@@ -56,16 +56,16 @@ pub trait Api<C: Send + Sync> {
     }
 
     /// 5分後の予想を取得します
-    async fn forecast_after5min_history_id_get(
+    async fn forecast_after5min_rate_id_get(
         &self,
-        history_id: String,
-        context: &C) -> Result<ForecastAfter5minHistoryIdGetResponse, ApiError>;
+        rate_id: String,
+        context: &C) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>;
 
     /// レート履歴を新規登録します
-    async fn histories_post(
+    async fn rates_post(
         &self,
         history: models::History,
-        context: &C) -> Result<HistoriesPostResponse, ApiError>;
+        context: &C) -> Result<RatesPostResponse, ApiError>;
 
 }
 
@@ -78,16 +78,16 @@ pub trait ApiNoContext<C: Send + Sync> {
     fn context(&self) -> &C;
 
     /// 5分後の予想を取得します
-    async fn forecast_after5min_history_id_get(
+    async fn forecast_after5min_rate_id_get(
         &self,
-        history_id: String,
-        ) -> Result<ForecastAfter5minHistoryIdGetResponse, ApiError>;
+        rate_id: String,
+        ) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>;
 
     /// レート履歴を新規登録します
-    async fn histories_post(
+    async fn rates_post(
         &self,
         history: models::History,
-        ) -> Result<HistoriesPostResponse, ApiError>;
+        ) -> Result<RatesPostResponse, ApiError>;
 
 }
 
@@ -115,23 +115,23 @@ impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ApiNoContext<C> for Contex
     }
 
     /// 5分後の予想を取得します
-    async fn forecast_after5min_history_id_get(
+    async fn forecast_after5min_rate_id_get(
         &self,
-        history_id: String,
-        ) -> Result<ForecastAfter5minHistoryIdGetResponse, ApiError>
+        rate_id: String,
+        ) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>
     {
         let context = self.context().clone();
-        self.api().forecast_after5min_history_id_get(history_id, &context).await
+        self.api().forecast_after5min_rate_id_get(rate_id, &context).await
     }
 
     /// レート履歴を新規登録します
-    async fn histories_post(
+    async fn rates_post(
         &self,
         history: models::History,
-        ) -> Result<HistoriesPostResponse, ApiError>
+        ) -> Result<RatesPostResponse, ApiError>
     {
         let context = self.context().clone();
-        self.api().histories_post(history, &context).await
+        self.api().rates_post(history, &context).await
     }
 
 }

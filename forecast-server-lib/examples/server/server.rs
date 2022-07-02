@@ -93,8 +93,8 @@ impl<C> Server<C> {
 
 use forecast_server_lib::{
     Api,
-    ForecastAfter5minHistoryIdGetResponse,
-    HistoriesPostResponse,
+    ForecastAfter5minRateIdGetResponse,
+    RatesPostResponse,
 };
 use forecast_server_lib::server::MakeService;
 use std::error::Error;
@@ -104,24 +104,24 @@ use swagger::ApiError;
 impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
 {
     /// 5分後の予想を取得します
-    async fn forecast_after5min_history_id_get(
+    async fn forecast_after5min_rate_id_get(
         &self,
-        history_id: String,
-        context: &C) -> Result<ForecastAfter5minHistoryIdGetResponse, ApiError>
+        rate_id: String,
+        context: &C) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>
     {
         let context = context.clone();
-        info!("forecast_after5min_history_id_get(\"{}\") - X-Span-ID: {:?}", history_id, context.get().0.clone());
+        info!("forecast_after5min_rate_id_get(\"{}\") - X-Span-ID: {:?}", rate_id, context.get().0.clone());
         Err(ApiError("Generic failure".into()))
     }
 
     /// レート履歴を新規登録します
-    async fn histories_post(
+    async fn rates_post(
         &self,
         history: models::History,
-        context: &C) -> Result<HistoriesPostResponse, ApiError>
+        context: &C) -> Result<RatesPostResponse, ApiError>
     {
         let context = context.clone();
-        info!("histories_post({:?}) - X-Span-ID: {:?}", history, context.get().0.clone());
+        info!("rates_post({:?}) - X-Span-ID: {:?}", history, context.get().0.clone());
         Err(ApiError("Generic failure".into()))
     }
 

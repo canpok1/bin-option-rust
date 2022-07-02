@@ -121,43 +121,44 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 /// 成功時の情報
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct ForecastAfter5minHistoryIdGet200Response {
-    #[serde(rename = "rate")]
-    pub rate: models::Rate,
+pub struct ForecastAfter5minRateIdGet200Response {
+    #[serde(rename = "result")]
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub result: Option<models::ForecastResult>,
 
 }
 
-impl ForecastAfter5minHistoryIdGet200Response {
-    pub fn new(rate: models::Rate, ) -> ForecastAfter5minHistoryIdGet200Response {
-        ForecastAfter5minHistoryIdGet200Response {
-            rate: rate,
+impl ForecastAfter5minRateIdGet200Response {
+    pub fn new() -> ForecastAfter5minRateIdGet200Response {
+        ForecastAfter5minRateIdGet200Response {
+            result: None,
         }
     }
 }
 
-/// Converts the ForecastAfter5minHistoryIdGet200Response value to the Query Parameters representation (style=form, explode=false)
+/// Converts the ForecastAfter5minRateIdGet200Response value to the Query Parameters representation (style=form, explode=false)
 /// specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde serializer
-impl std::string::ToString for ForecastAfter5minHistoryIdGet200Response {
+impl std::string::ToString for ForecastAfter5minRateIdGet200Response {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
-        // Skipping rate in query parameter serialization
+        // Skipping result in query parameter serialization
 
         params.join(",").to_string()
     }
 }
 
-/// Converts Query Parameters representation (style=form, explode=false) to a ForecastAfter5minHistoryIdGet200Response value
+/// Converts Query Parameters representation (style=form, explode=false) to a ForecastAfter5minRateIdGet200Response value
 /// as specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde deserializer
-impl std::str::FromStr for ForecastAfter5minHistoryIdGet200Response {
+impl std::str::FromStr for ForecastAfter5minRateIdGet200Response {
     type Err = String;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         #[derive(Default)]
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
-            pub rate: Vec<models::Rate>,
+            pub result: Vec<models::ForecastResult>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -169,13 +170,13 @@ impl std::str::FromStr for ForecastAfter5minHistoryIdGet200Response {
         while key_result.is_some() {
             let val = match string_iter.next() {
                 Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing ForecastAfter5minHistoryIdGet200Response".to_string())
+                None => return std::result::Result::Err("Missing value while parsing ForecastAfter5minRateIdGet200Response".to_string())
             };
 
             if let Some(key) = key_result {
                 match key {
-                    "rate" => intermediate_rep.rate.push(<models::Rate as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing ForecastAfter5minHistoryIdGet200Response".to_string())
+                    "result" => intermediate_rep.result.push(<models::ForecastResult as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing ForecastAfter5minRateIdGet200Response".to_string())
                 }
             }
 
@@ -184,40 +185,40 @@ impl std::str::FromStr for ForecastAfter5minHistoryIdGet200Response {
         }
 
         // Use the intermediate representation to return the struct
-        std::result::Result::Ok(ForecastAfter5minHistoryIdGet200Response {
-            rate: intermediate_rep.rate.into_iter().next().ok_or("rate missing in ForecastAfter5minHistoryIdGet200Response".to_string())?,
+        std::result::Result::Ok(ForecastAfter5minRateIdGet200Response {
+            result: intermediate_rep.result.into_iter().next(),
         })
     }
 }
 
-// Methods for converting between header::IntoHeaderValue<ForecastAfter5minHistoryIdGet200Response> and hyper::header::HeaderValue
+// Methods for converting between header::IntoHeaderValue<ForecastAfter5minRateIdGet200Response> and hyper::header::HeaderValue
 
 #[cfg(any(feature = "client", feature = "server"))]
-impl std::convert::TryFrom<header::IntoHeaderValue<ForecastAfter5minHistoryIdGet200Response>> for hyper::header::HeaderValue {
+impl std::convert::TryFrom<header::IntoHeaderValue<ForecastAfter5minRateIdGet200Response>> for hyper::header::HeaderValue {
     type Error = String;
 
-    fn try_from(hdr_value: header::IntoHeaderValue<ForecastAfter5minHistoryIdGet200Response>) -> std::result::Result<Self, Self::Error> {
+    fn try_from(hdr_value: header::IntoHeaderValue<ForecastAfter5minRateIdGet200Response>) -> std::result::Result<Self, Self::Error> {
         let hdr_value = hdr_value.to_string();
         match hyper::header::HeaderValue::from_str(&hdr_value) {
              std::result::Result::Ok(value) => std::result::Result::Ok(value),
              std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for ForecastAfter5minHistoryIdGet200Response - value: {} is invalid {}",
+                 format!("Invalid header value for ForecastAfter5minRateIdGet200Response - value: {} is invalid {}",
                      hdr_value, e))
         }
     }
 }
 
 #[cfg(any(feature = "client", feature = "server"))]
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ForecastAfter5minHistoryIdGet200Response> {
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ForecastAfter5minRateIdGet200Response> {
     type Error = String;
 
     fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
         match hdr_value.to_str() {
              std::result::Result::Ok(value) => {
-                    match <ForecastAfter5minHistoryIdGet200Response as std::str::FromStr>::from_str(value) {
+                    match <ForecastAfter5minRateIdGet200Response as std::str::FromStr>::from_str(value) {
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into ForecastAfter5minHistoryIdGet200Response - {}",
+                            format!("Unable to convert header value '{}' into ForecastAfter5minRateIdGet200Response - {}",
                                 value, err))
                     }
              },
@@ -229,75 +230,62 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
-/// 成功時の情報
+/// 予測結果
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct HistoriesPost201Response {
-    /// レート履歴ID
-    #[serde(rename = "historyId")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub history_id: Option<String>,
+pub struct ForecastResult {
+    /// 予測が完了したか？
+    #[serde(rename = "complete")]
+    pub complete: bool,
 
-    /// 登録数
-    #[serde(rename = "count")]
-    pub count: i64,
-
-    /// 有効期限
-    #[serde(rename = "expires")]
+    /// レートの値
+    #[serde(rename = "rate")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub expires: Option<String>,
+    pub rate: Option<f64>,
 
 }
 
-impl HistoriesPost201Response {
-    pub fn new(count: i64, ) -> HistoriesPost201Response {
-        HistoriesPost201Response {
-            history_id: None,
-            count: count,
-            expires: None,
+impl ForecastResult {
+    pub fn new(complete: bool, ) -> ForecastResult {
+        ForecastResult {
+            complete: complete,
+            rate: None,
         }
     }
 }
 
-/// Converts the HistoriesPost201Response value to the Query Parameters representation (style=form, explode=false)
+/// Converts the ForecastResult value to the Query Parameters representation (style=form, explode=false)
 /// specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde serializer
-impl std::string::ToString for HistoriesPost201Response {
+impl std::string::ToString for ForecastResult {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
 
-        if let Some(ref history_id) = self.history_id {
-            params.push("historyId".to_string());
-            params.push(history_id.to_string());
-        }
+        params.push("complete".to_string());
+        params.push(self.complete.to_string());
 
 
-        params.push("count".to_string());
-        params.push(self.count.to_string());
-
-
-        if let Some(ref expires) = self.expires {
-            params.push("expires".to_string());
-            params.push(expires.to_string());
+        if let Some(ref rate) = self.rate {
+            params.push("rate".to_string());
+            params.push(rate.to_string());
         }
 
         params.join(",").to_string()
     }
 }
 
-/// Converts Query Parameters representation (style=form, explode=false) to a HistoriesPost201Response value
+/// Converts Query Parameters representation (style=form, explode=false) to a ForecastResult value
 /// as specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde deserializer
-impl std::str::FromStr for HistoriesPost201Response {
+impl std::str::FromStr for ForecastResult {
     type Err = String;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         #[derive(Default)]
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
-            pub history_id: Vec<String>,
-            pub count: Vec<i64>,
-            pub expires: Vec<String>,
+            pub complete: Vec<bool>,
+            pub rate: Vec<f64>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -309,15 +297,14 @@ impl std::str::FromStr for HistoriesPost201Response {
         while key_result.is_some() {
             let val = match string_iter.next() {
                 Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing HistoriesPost201Response".to_string())
+                None => return std::result::Result::Err("Missing value while parsing ForecastResult".to_string())
             };
 
             if let Some(key) = key_result {
                 match key {
-                    "historyId" => intermediate_rep.history_id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "count" => intermediate_rep.count.push(<i64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "expires" => intermediate_rep.expires.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing HistoriesPost201Response".to_string())
+                    "complete" => intermediate_rep.complete.push(<bool as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "rate" => intermediate_rep.rate.push(<f64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing ForecastResult".to_string())
                 }
             }
 
@@ -326,42 +313,41 @@ impl std::str::FromStr for HistoriesPost201Response {
         }
 
         // Use the intermediate representation to return the struct
-        std::result::Result::Ok(HistoriesPost201Response {
-            history_id: intermediate_rep.history_id.into_iter().next(),
-            count: intermediate_rep.count.into_iter().next().ok_or("count missing in HistoriesPost201Response".to_string())?,
-            expires: intermediate_rep.expires.into_iter().next(),
+        std::result::Result::Ok(ForecastResult {
+            complete: intermediate_rep.complete.into_iter().next().ok_or("complete missing in ForecastResult".to_string())?,
+            rate: intermediate_rep.rate.into_iter().next(),
         })
     }
 }
 
-// Methods for converting between header::IntoHeaderValue<HistoriesPost201Response> and hyper::header::HeaderValue
+// Methods for converting between header::IntoHeaderValue<ForecastResult> and hyper::header::HeaderValue
 
 #[cfg(any(feature = "client", feature = "server"))]
-impl std::convert::TryFrom<header::IntoHeaderValue<HistoriesPost201Response>> for hyper::header::HeaderValue {
+impl std::convert::TryFrom<header::IntoHeaderValue<ForecastResult>> for hyper::header::HeaderValue {
     type Error = String;
 
-    fn try_from(hdr_value: header::IntoHeaderValue<HistoriesPost201Response>) -> std::result::Result<Self, Self::Error> {
+    fn try_from(hdr_value: header::IntoHeaderValue<ForecastResult>) -> std::result::Result<Self, Self::Error> {
         let hdr_value = hdr_value.to_string();
         match hyper::header::HeaderValue::from_str(&hdr_value) {
              std::result::Result::Ok(value) => std::result::Result::Ok(value),
              std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for HistoriesPost201Response - value: {} is invalid {}",
+                 format!("Invalid header value for ForecastResult - value: {} is invalid {}",
                      hdr_value, e))
         }
     }
 }
 
 #[cfg(any(feature = "client", feature = "server"))]
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<HistoriesPost201Response> {
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ForecastResult> {
     type Error = String;
 
     fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
         match hdr_value.to_str() {
              std::result::Result::Ok(value) => {
-                    match <HistoriesPost201Response as std::str::FromStr>::from_str(value) {
+                    match <ForecastResult as std::str::FromStr>::from_str(value) {
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into HistoriesPost201Response - {}",
+                            format!("Unable to convert header value '{}' into ForecastResult - {}",
                                 value, err))
                     }
              },
@@ -380,20 +366,18 @@ pub struct History {
     /// 通貨ペア
     // Note: inline enums are not fully supported by openapi-generator
     #[serde(rename = "pair")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub pair: Option<String>,
+    pub pair: String,
 
-    #[serde(rename = "rates")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub rates: Option<Vec<f64>>,
+    #[serde(rename = "rate_histories")]
+    pub rate_histories: Vec<f64>,
 
 }
 
 impl History {
-    pub fn new() -> History {
+    pub fn new(pair: String, rate_histories: Vec<f64>, ) -> History {
         History {
-            pair: None,
-            rates: None,
+            pair: pair,
+            rate_histories: rate_histories,
         }
     }
 }
@@ -405,16 +389,12 @@ impl std::string::ToString for History {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
 
-        if let Some(ref pair) = self.pair {
-            params.push("pair".to_string());
-            params.push(pair.to_string());
-        }
+        params.push("pair".to_string());
+        params.push(self.pair.to_string());
 
 
-        if let Some(ref rates) = self.rates {
-            params.push("rates".to_string());
-            params.push(rates.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
-        }
+        params.push("rate_histories".to_string());
+        params.push(self.rate_histories.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
 
         params.join(",").to_string()
     }
@@ -431,7 +411,7 @@ impl std::str::FromStr for History {
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
             pub pair: Vec<String>,
-            pub rates: Vec<Vec<f64>>,
+            pub rate_histories: Vec<Vec<f64>>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -449,7 +429,7 @@ impl std::str::FromStr for History {
             if let Some(key) = key_result {
                 match key {
                     "pair" => intermediate_rep.pair.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "rates" => return std::result::Result::Err("Parsing a container in this style is not supported in History".to_string()),
+                    "rate_histories" => return std::result::Result::Err("Parsing a container in this style is not supported in History".to_string()),
                     _ => return std::result::Result::Err("Unexpected key while parsing History".to_string())
                 }
             }
@@ -460,8 +440,8 @@ impl std::str::FromStr for History {
 
         // Use the intermediate representation to return the struct
         std::result::Result::Ok(History {
-            pair: intermediate_rep.pair.into_iter().next(),
-            rates: intermediate_rep.rates.into_iter().next(),
+            pair: intermediate_rep.pair.into_iter().next().ok_or("pair missing in History".to_string())?,
+            rate_histories: intermediate_rep.rate_histories.into_iter().next().ok_or("rate_histories missing in History".to_string())?,
         })
     }
 }
@@ -505,65 +485,62 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
-/// レート
+/// 成功時の情報
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct Rate {
-    /// レートの日時
-    #[serde(rename = "time")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub time: Option<String>,
+pub struct RatesPost201Response {
+    /// レート履歴ID
+    #[serde(rename = "rateId")]
+    pub rate_id: String,
 
-    /// レートの値
-    #[serde(rename = "value")]
+    /// 有効期限
+    #[serde(rename = "expires")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub value: Option<f64>,
+    pub expires: Option<String>,
 
 }
 
-impl Rate {
-    pub fn new() -> Rate {
-        Rate {
-            time: None,
-            value: None,
+impl RatesPost201Response {
+    pub fn new(rate_id: String, ) -> RatesPost201Response {
+        RatesPost201Response {
+            rate_id: rate_id,
+            expires: None,
         }
     }
 }
 
-/// Converts the Rate value to the Query Parameters representation (style=form, explode=false)
+/// Converts the RatesPost201Response value to the Query Parameters representation (style=form, explode=false)
 /// specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde serializer
-impl std::string::ToString for Rate {
+impl std::string::ToString for RatesPost201Response {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
 
-        if let Some(ref time) = self.time {
-            params.push("time".to_string());
-            params.push(time.to_string());
-        }
+        params.push("rateId".to_string());
+        params.push(self.rate_id.to_string());
 
 
-        if let Some(ref value) = self.value {
-            params.push("value".to_string());
-            params.push(value.to_string());
+        if let Some(ref expires) = self.expires {
+            params.push("expires".to_string());
+            params.push(expires.to_string());
         }
 
         params.join(",").to_string()
     }
 }
 
-/// Converts Query Parameters representation (style=form, explode=false) to a Rate value
+/// Converts Query Parameters representation (style=form, explode=false) to a RatesPost201Response value
 /// as specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde deserializer
-impl std::str::FromStr for Rate {
+impl std::str::FromStr for RatesPost201Response {
     type Err = String;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         #[derive(Default)]
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
-            pub time: Vec<String>,
-            pub value: Vec<f64>,
+            pub rate_id: Vec<String>,
+            pub expires: Vec<String>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -575,14 +552,14 @@ impl std::str::FromStr for Rate {
         while key_result.is_some() {
             let val = match string_iter.next() {
                 Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing Rate".to_string())
+                None => return std::result::Result::Err("Missing value while parsing RatesPost201Response".to_string())
             };
 
             if let Some(key) = key_result {
                 match key {
-                    "time" => intermediate_rep.time.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "value" => intermediate_rep.value.push(<f64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing Rate".to_string())
+                    "rateId" => intermediate_rep.rate_id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "expires" => intermediate_rep.expires.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing RatesPost201Response".to_string())
                 }
             }
 
@@ -591,41 +568,41 @@ impl std::str::FromStr for Rate {
         }
 
         // Use the intermediate representation to return the struct
-        std::result::Result::Ok(Rate {
-            time: intermediate_rep.time.into_iter().next(),
-            value: intermediate_rep.value.into_iter().next(),
+        std::result::Result::Ok(RatesPost201Response {
+            rate_id: intermediate_rep.rate_id.into_iter().next().ok_or("rateId missing in RatesPost201Response".to_string())?,
+            expires: intermediate_rep.expires.into_iter().next(),
         })
     }
 }
 
-// Methods for converting between header::IntoHeaderValue<Rate> and hyper::header::HeaderValue
+// Methods for converting between header::IntoHeaderValue<RatesPost201Response> and hyper::header::HeaderValue
 
 #[cfg(any(feature = "client", feature = "server"))]
-impl std::convert::TryFrom<header::IntoHeaderValue<Rate>> for hyper::header::HeaderValue {
+impl std::convert::TryFrom<header::IntoHeaderValue<RatesPost201Response>> for hyper::header::HeaderValue {
     type Error = String;
 
-    fn try_from(hdr_value: header::IntoHeaderValue<Rate>) -> std::result::Result<Self, Self::Error> {
+    fn try_from(hdr_value: header::IntoHeaderValue<RatesPost201Response>) -> std::result::Result<Self, Self::Error> {
         let hdr_value = hdr_value.to_string();
         match hyper::header::HeaderValue::from_str(&hdr_value) {
              std::result::Result::Ok(value) => std::result::Result::Ok(value),
              std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for Rate - value: {} is invalid {}",
+                 format!("Invalid header value for RatesPost201Response - value: {} is invalid {}",
                      hdr_value, e))
         }
     }
 }
 
 #[cfg(any(feature = "client", feature = "server"))]
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<Rate> {
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<RatesPost201Response> {
     type Error = String;
 
     fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
         match hdr_value.to_str() {
              std::result::Result::Ok(value) => {
-                    match <Rate as std::str::FromStr>::from_str(value) {
+                    match <RatesPost201Response as std::str::FromStr>::from_str(value) {
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into Rate - {}",
+                            format!("Unable to convert header value '{}' into RatesPost201Response - {}",
                                 value, err))
                     }
              },

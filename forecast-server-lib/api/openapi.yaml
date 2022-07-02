@@ -10,7 +10,7 @@ tags:
 - description: レート関連
   name: rates
 paths:
-  /histories:
+  /rates:
     post:
       requestBody:
         content:
@@ -23,7 +23,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/_histories_post_201_response'
+                $ref: '#/components/schemas/_rates_post_201_response'
           description: 登録成功
         "400":
           content:
@@ -46,13 +46,13 @@ paths:
       summary: レート履歴を新規登録します
       tags:
       - rates
-  /forecast/after5min/{historyId}:
+  /forecast/after5min/{rateId}:
     get:
       parameters:
       - description: レート履歴ID
         explode: false
         in: path
-        name: historyId
+        name: rateId
         required: true
         schema:
           type: string
@@ -62,59 +62,63 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/_forecast_after5min__historyId__get_200_response'
-          description: 登録成功
+                $ref: '#/components/schemas/_forecast_after5min__rateId__get_200_response'
+          description: 取得成功
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: 登録失敗（レート情報が見つからない）
+          description: 取得失敗（レート情報が見つからない）
         "500":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: 登録失敗（内部エラー）
+          description: 取得失敗（内部エラー）
       summary: 5分後の予想を取得します
       tags:
       - rates
 components:
   schemas:
-    Rate:
-      description: レート
+    ForecastResult:
+      description: 予測結果
       example:
-        time: time
-        value: 0.8008281904610115
+        rate: 0.8008281904610115
+        complete: true
       properties:
-        time:
-          description: レートの日時
-          format: dateTime
-          type: string
-        value:
+        complete:
+          description: 予測が完了したか？
+          type: boolean
+        rate:
           description: レートの値
           format: double
           type: number
+      required:
+      - complete
       type: object
     History:
       description: レート履歴
       example:
-        rates:
-        - 0.8008281904610115
-        - 0.8008281904610115
         pair: USDJPY
+        rate_histories:
+        - 0.8008281904610115
+        - 0.8008281904610115
       properties:
         pair:
           description: 通貨ペア
           enum:
           - USDJPY
           type: string
-        rates:
+        rate_histories:
           items:
-            description: レートの推移（先頭が過去）
+            description: レートの履歴（先頭が過去）
             format: double
             type: number
           type: array
+      required:
+      - pair
+      - rate_histories
       type: object
     Error:
       description: エラー情報
@@ -125,37 +129,31 @@ components:
       required:
       - message
       type: object
-    _histories_post_201_response:
+    _rates_post_201_response:
       description: 成功時の情報
       example:
         expires: expires
-        historyId: historyId
-        count: 0
+        rateId: rateId
       properties:
-        historyId:
+        rateId:
           description: レート履歴ID
           type: string
-        count:
-          description: 登録数
-          format: int64
-          type: integer
         expires:
           description: 有効期限
           format: dateTime
           type: string
       required:
-      - count
-      - id
+      - rateId
       type: object
-    _forecast_after5min__historyId__get_200_response:
+    _forecast_after5min__rateId__get_200_response:
       description: 成功時の情報
       example:
-        rate:
-          time: time
-          value: 0.8008281904610115
+        result:
+          rate: 0.8008281904610115
+          complete: true
       properties:
-        rate:
-          $ref: '#/components/schemas/Rate'
+        result:
+          $ref: '#/components/schemas/ForecastResult'
       required:
       - rate
       type: object

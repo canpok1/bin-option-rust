@@ -36,8 +36,8 @@ const FRAGMENT_ENCODE_SET: &AsciiSet = &percent_encoding::CONTROLS
 const ID_ENCODE_SET: &AsciiSet = &FRAGMENT_ENCODE_SET.add(b'|');
 
 use crate::{Api,
-     ForecastAfter5minHistoryIdGetResponse,
-     HistoriesPostResponse
+     ForecastAfter5minRateIdGetResponse,
+     RatesPostResponse
      };
 
 /// Convert input into a base path, e.g. "http://example:123". Also checks the scheme as it goes.
@@ -381,16 +381,16 @@ impl<S, C> Api<C> for Client<S, C> where
         }
     }
 
-    async fn forecast_after5min_history_id_get(
+    async fn forecast_after5min_rate_id_get(
         &self,
-        param_history_id: String,
-        context: &C) -> Result<ForecastAfter5minHistoryIdGetResponse, ApiError>
+        param_rate_id: String,
+        context: &C) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>
     {
         let mut client_service = self.client_service.clone();
         let mut uri = format!(
-            "{}/forecast/after5min/{history_id}",
+            "{}/forecast/after5min/{rate_id}",
             self.base_path
-            ,history_id=utf8_percent_encode(&param_history_id.to_string(), ID_ENCODE_SET)
+            ,rate_id=utf8_percent_encode(&param_rate_id.to_string(), ID_ENCODE_SET)
         );
 
         // Query parameters
@@ -433,10 +433,10 @@ impl<S, C> Api<C> for Client<S, C> where
                         .map_err(|e| ApiError(format!("Failed to read response: {}", e))).await?;
                 let body = str::from_utf8(&body)
                     .map_err(|e| ApiError(format!("Response was not valid UTF8: {}", e)))?;
-                let body = serde_json::from_str::<models::ForecastAfter5minHistoryIdGet200Response>(body).map_err(|e| {
+                let body = serde_json::from_str::<models::ForecastAfter5minRateIdGet200Response>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(ForecastAfter5minHistoryIdGetResponse::Status200
+                Ok(ForecastAfter5minRateIdGetResponse::Status200
                     (body)
                 )
             }
@@ -450,7 +450,7 @@ impl<S, C> Api<C> for Client<S, C> where
                 let body = serde_json::from_str::<models::Error>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(ForecastAfter5minHistoryIdGetResponse::Status404
+                Ok(ForecastAfter5minRateIdGetResponse::Status404
                     (body)
                 )
             }
@@ -464,7 +464,7 @@ impl<S, C> Api<C> for Client<S, C> where
                 let body = serde_json::from_str::<models::Error>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(ForecastAfter5minHistoryIdGetResponse::Status500
+                Ok(ForecastAfter5minRateIdGetResponse::Status500
                     (body)
                 )
             }
@@ -488,14 +488,14 @@ impl<S, C> Api<C> for Client<S, C> where
         }
     }
 
-    async fn histories_post(
+    async fn rates_post(
         &self,
         param_history: models::History,
-        context: &C) -> Result<HistoriesPostResponse, ApiError>
+        context: &C) -> Result<RatesPostResponse, ApiError>
     {
         let mut client_service = self.client_service.clone();
         let mut uri = format!(
-            "{}/histories",
+            "{}/rates",
             self.base_path
         );
 
@@ -549,10 +549,10 @@ impl<S, C> Api<C> for Client<S, C> where
                         .map_err(|e| ApiError(format!("Failed to read response: {}", e))).await?;
                 let body = str::from_utf8(&body)
                     .map_err(|e| ApiError(format!("Response was not valid UTF8: {}", e)))?;
-                let body = serde_json::from_str::<models::HistoriesPost201Response>(body).map_err(|e| {
+                let body = serde_json::from_str::<models::RatesPost201Response>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(HistoriesPostResponse::Status201
+                Ok(RatesPostResponse::Status201
                     (body)
                 )
             }
@@ -566,7 +566,7 @@ impl<S, C> Api<C> for Client<S, C> where
                 let body = serde_json::from_str::<models::Error>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(HistoriesPostResponse::Status400
+                Ok(RatesPostResponse::Status400
                     (body)
                 )
             }
@@ -580,7 +580,7 @@ impl<S, C> Api<C> for Client<S, C> where
                 let body = serde_json::from_str::<models::Error>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(HistoriesPostResponse::Status404
+                Ok(RatesPostResponse::Status404
                     (body)
                 )
             }
@@ -594,7 +594,7 @@ impl<S, C> Api<C> for Client<S, C> where
                 let body = serde_json::from_str::<models::Error>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(HistoriesPostResponse::Status500
+                Ok(RatesPostResponse::Status500
                     (body)
                 )
             }

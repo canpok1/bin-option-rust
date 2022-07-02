@@ -5,8 +5,8 @@
 use futures::{future, Stream, stream};
 #[allow(unused_imports)]
 use forecast_server_lib::{Api, ApiNoContext, Client, ContextWrapperExt, models,
-                      ForecastAfter5minHistoryIdGetResponse,
-                      HistoriesPostResponse,
+                      ForecastAfter5minRateIdGetResponse,
+                      RatesPostResponse,
                      };
 use clap::{App, Arg};
 
@@ -28,7 +28,7 @@ fn main() {
         .arg(Arg::with_name("operation")
             .help("Sets the operation to run")
             .possible_values(&[
-                "ForecastAfter5minHistoryIdGet",
+                "ForecastAfter5minRateIdGet",
             ])
             .required(true)
             .index(1))
@@ -72,15 +72,15 @@ fn main() {
     let mut rt = tokio::runtime::Runtime::new().unwrap();
 
     match matches.value_of("operation") {
-        Some("ForecastAfter5minHistoryIdGet") => {
-            let result = rt.block_on(client.forecast_after5min_history_id_get(
-                  "history_id_example".to_string()
+        Some("ForecastAfter5minRateIdGet") => {
+            let result = rt.block_on(client.forecast_after5min_rate_id_get(
+                  "rate_id_example".to_string()
             ));
             info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());
         },
         /* Disabled because there's no example.
-        Some("HistoriesPost") => {
-            let result = rt.block_on(client.histories_post(
+        Some("RatesPost") => {
+            let result = rt.block_on(client.rates_post(
                   ???
             ));
             info!("{:?} (X-Span-ID: {:?})", result, (client.context() as &dyn Has<XSpanIdString>).get().clone());

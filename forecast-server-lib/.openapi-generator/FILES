@@ -1,14 +1,13 @@
 .cargo/config
 .gitignore
-.openapi-generator-ignore
 Cargo.toml
 README.md
 api/openapi.yaml
 docs/Error.md
-docs/ForecastAfter5minHistoryIdGet200Response.md
-docs/HistoriesPost201Response.md
+docs/ForecastAfter5minRateIdGet200Response.md
+docs/ForecastResult.md
 docs/History.md
-docs/Rate.md
+docs/RatesPost201Response.md
 docs/rates_api.md
 examples/ca.pem
 examples/client/main.rs

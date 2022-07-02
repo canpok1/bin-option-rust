@@ -14,7 +14,7 @@ To see how to make this your own, look here:
 [README]((https://openapi-generator.tech))
 
 - API version: 1.0.0
-- Build date: 2022-06-18T03:36:47.120779Z[Etc/UTC]
+- Build date: 2022-07-02T06:40:29.458474Z[Etc/UTC]
 
 
 
@@ -61,7 +61,7 @@ cargo run --example server
 To run a client, follow one of the following simple steps:
 
 ```
-cargo run --example client ForecastAfter5minHistoryIdGet
+cargo run --example client ForecastAfter5minRateIdGet
 ```
 
 ### HTTPS
@@ -95,17 +95,17 @@ All URIs are relative to *http://localhost28080*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[****](docs/rates_api.md#) | **GET** /forecast/after5min/{historyId} | 5分後の予想を取得します
-[****](docs/rates_api.md#) | **POST** /histories | レート履歴を新規登録します
+[****](docs/rates_api.md#) | **GET** /forecast/after5min/{rateId} | 5分後の予想を取得します
+[****](docs/rates_api.md#) | **POST** /rates | レート履歴を新規登録します
 
 
 ## Documentation For Models
 
  - [Error](docs/Error.md)
- - [ForecastAfter5minHistoryIdGet200Response](docs/ForecastAfter5minHistoryIdGet200Response.md)
- - [HistoriesPost201Response](docs/HistoriesPost201Response.md)
+ - [ForecastAfter5minRateIdGet200Response](docs/ForecastAfter5minRateIdGet200Response.md)
+ - [ForecastResult](docs/ForecastResult.md)
  - [History](docs/History.md)
- - [Rate](docs/Rate.md)
+ - [RatesPost201Response](docs/RatesPost201Response.md)
 
 
 ## Documentation For Authorization
