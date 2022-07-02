@@ -1,15 +1,16 @@
 use chrono::NaiveDateTime;
-use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction, Serialized};
+use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction, Serialized, from_row, from_value, Deserialized};
 
 use crate::{
     error::{MyResult},
-    domain::model::{RateForTraining, ForecastModel, RateForForecast},
+    domain::model::{RateForTraining, ForecastModel, RateForForecast, ForecastResult},
     mysql::model::ForecastModelRecord,
 };
 
 static TABLE_NAME_RATE_FOR_TRAINING:&str = "rates_for_training";
 static TABLE_NAME_FORECAST_MODEL:&str = "forecast_models";
 static TABLE_NAME_RATE_FOR_FORECAST:&str = "rates_for_forecast";
+static TABLE_NAME_FORECAST_RESULT:&str = "forecast_results";
 
 
 pub trait Client
@@ -25,8 +26,12 @@ pub trait Client
 
     fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()>;
     fn select_forecast_model(&self, tx: &mut Transaction, pair: &str, no:i32) -> MyResult<Option<ForecastModel>>;
+    fn select_forecast_models(&self, tx: &mut Transaction, pair: &str) -> MyResult<Vec<ForecastModel>>;
 
     fn insert_rates_for_forecast(&self, tx: &mut Transaction, rate: &RateForForecast) -> MyResult<String>;
+    fn select_rates_for_forecast_unforecasted(&self, tx: &mut Transaction, pair: &str) -> MyResult<Vec<RateForForecast>>;
+
+    fn insert_forecast_results(&self, tx: &mut Transaction, results: &Vec<ForecastResult>) -> MyResult<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -275,6 +280,36 @@ impl Client for DefaultClient
         }
     }
 
+    fn select_forecast_models(&self, tx: &mut Transaction, pair: &str) -> MyResult<Vec<ForecastModel>> {
+        let q = format!(
+            "SELECT pair, model_no, model_type, model_data, memo, created_at, updated_at FROM {} WHERE pair = :pair",
+            TABLE_NAME_FORECAST_MODEL
+        );
+        let p = params! {
+            "pair" => pair,
+        };
+        log::debug!("query: {}, pair: {}", q, pair);
+
+        let mut models:Vec<ForecastModel> = vec![];
+        let mut result = tx.exec_iter(q, p)?;
+        while let Some(result_set) = result.next_set() {
+            for row in result_set? {
+                let (pair, model_no, model_type, model_data, memo, created_at, updated_at) = from_row(row?);
+                let record = ForecastModelRecord {
+                    pair,
+                    model_no,
+                    model_type,
+                    model_data,
+                    memo,
+                    created_at,
+                    updated_at,
+                };
+                models.push(record.to_domain()?);
+            }
+        }
+        Ok(models)
+    }
+
     fn insert_rates_for_forecast(&self, tx: &mut Transaction, rate: &RateForForecast) -> MyResult<String> {
         let id: Option<String> = tx.query_first("SELECT UUID();")?;
         tx.exec_drop(
@@ -291,5 +326,66 @@ impl Client for DefaultClient
             },
         )?;
         Ok(id.unwrap())
+    }
+
+    fn select_rates_for_forecast_unforecasted(&self, tx: &mut Transaction, pair: &str) -> MyResult<Vec<RateForForecast>> {
+        let q = format!(
+            r#"
+                WITH forecasted AS (
+                    SELECT DISTINCT rate_id FROM {}
+                )
+                SELECT f.id, f.pair, f.histories, f.expire, f.memo, f.created_at, f.updated_at
+                FROM {} f
+                LEFT OUTER JOIN forecasted ON f.id = forecasted.rate_id
+                WHERE
+                    f.pair = :pair AND forecasted.rate_id IS NULL
+            "#,
+            TABLE_NAME_FORECAST_RESULT,
+            TABLE_NAME_RATE_FOR_FORECAST,
+        );
+        let p = params! {
+            "pair" => pair,
+        };
+        log::debug!("query: {}, pair: {}", q, pair);
+
+        let mut rates:Vec<RateForForecast> = vec![];
+        let mut result = tx.exec_iter(q, p)?;
+        while let Some(result_set) = result.next_set() {
+            for row in result_set? {
+                let (id, pair, histories_raw, expire, memo, created_at, updated_at) = from_row(row?);
+                let Deserialized(histories): Deserialized<Vec<f64>> = from_value(histories_raw);
+                let record = RateForForecast {
+                    id,
+                    pair,
+                    histories,
+                    expire,
+                    memo,
+                    created_at,
+                    updated_at,
+                };
+                rates.push(record);
+            }
+        }
+        Ok(rates)
+    }
+
+    fn insert_forecast_results(&self, tx: &mut Transaction, results: &Vec<ForecastResult>) -> MyResult<()> {
+        tx.exec_batch(
+            format!(
+                "INSERT INTO {} (rate_id, model_no, forecast_type, result, memo) VALUES (:rate_id, :model_no, :forecast_type, :result, :memo);",
+                TABLE_NAME_FORECAST_RESULT,
+            ),
+            results.iter().map(|result| {
+                params! {
+                    "rate_id" => &result.rate_id,
+                    "model_no" => &result.model_no,
+                    "forecast_type" => &result.forecast_type,
+                    "result" => &result.result,
+                    "memo" => &result.memo,
+                }
+            }),
+        )?;
+
+        Ok(())
     }
 }

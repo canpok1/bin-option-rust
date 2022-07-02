@@ -94,12 +94,37 @@ pub enum ForecastModel
         no: i32,
         model: SVR<f64, DenseMatrix<f64>, RBFKernel<f64>>,
         memo: String,
-
     }
 }
 
 impl ForecastModel {
-    pub fn predict(&self, x: &DenseMatrix<f64>) -> MyResult<Vec<f64>> {
+    pub fn get_pair(&self) -> MyResult<String> {
+        match self {
+            ForecastModel::RandomForest { pair, no: _, model: _, memo: _ } => Ok(pair.to_string()),
+            ForecastModel::KNN { pair, no: _, model: _, memo: _ } => Ok(pair.to_string()),
+            ForecastModel::Linear { pair, no: _, model: _, memo: _ } => Ok(pair.to_string()),
+            ForecastModel::Ridge { pair, no: _, model: _, memo: _ } => Ok(pair.to_string()),
+            ForecastModel::LASSO { pair, no: _, model: _, memo: _ } => Ok(pair.to_string()),
+            ForecastModel::ElasticNet { pair, no: _, model: _, memo: _ } => Ok(pair.to_string()),
+            ForecastModel::Logistic { pair, no: _, model: _, memo: _ } => Ok(pair.to_string()),
+            ForecastModel::SVR { pair, no: _, model: _, memo: _ } => Ok(pair.to_string()),
+        }
+    }
+
+    pub fn get_no(&self) -> MyResult<i32> {
+        match self {
+            ForecastModel::RandomForest { pair: _, no, model: _, memo: _ } => Ok(*no),
+            ForecastModel::KNN { pair: _, no, model: _, memo: _ } => Ok(*no),
+            ForecastModel::Linear { pair: _, no, model: _, memo: _ } => Ok(*no),
+            ForecastModel::Ridge { pair: _, no, model: _, memo: _ } => Ok(*no),
+            ForecastModel::LASSO { pair: _, no, model: _, memo: _ } => Ok(*no),
+            ForecastModel::ElasticNet { pair: _, no, model: _, memo: _ } => Ok(*no),
+            ForecastModel::Logistic { pair: _, no, model: _, memo: _ } => Ok(*no),
+            ForecastModel::SVR { pair: _, no, model: _, memo: _ } => Ok(*no),
+        }
+    }
+
+    pub fn predict_for_training(&self, x: &DenseMatrix<f64>) -> MyResult<Vec<f64>> {
         match self {
             ForecastModel::RandomForest { pair: _, no: _, model, memo: _ } => Ok(model.predict(x)?),
             ForecastModel::KNN { pair: _, no: _, model, memo: _ } => Ok(model.predict(x)?),
@@ -110,6 +135,13 @@ impl ForecastModel {
             ForecastModel::Logistic { pair: _, no: _, model, memo: _ } => Ok(model.predict(x)?),
             ForecastModel::SVR { pair: _, no: _, model, memo: _ } => Ok(model.predict(x)?),
         }
+    }
+
+    pub fn predict(&self, rates: &Vec<f64>) -> MyResult<f64> {
+        let org_x:Vec<Vec<f64>> = vec![rates.clone()];
+        let x = DenseMatrix::from_2d_vec(&org_x);
+        let y = self.predict_for_training(&x)?;
+        Ok(y[0])
     }
 
     pub fn serialize_model_data(&self) -> MyResult<Vec<u8>> {
@@ -172,6 +204,37 @@ impl fmt::Display for ForecastModel {
         }
     }
 }
+
+
+#[derive(Debug, Clone)]
+pub struct ForecastResult {
+    pub id: String,
+    pub rate_id: String,
+    pub model_no: i32,
+    pub forecast_type: i32,
+    pub result: f64,
+    pub memo: Option<String>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl ForecastResult {
+    pub fn new(rate_id:String, model_no: i32, forecast_type: i32, result: f64, memo: String) -> MyResult<Self> {
+        let dummy = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
+
+        Ok(ForecastResult {
+            id: "".to_string(),
+            rate_id,
+            model_no,
+            forecast_type,
+            result,
+            memo: Some(memo),
+            created_at: dummy.clone(),
+            updated_at: dummy.clone(),
+        })
+    }
+}
+
 
 #[derive(Debug, Clone)]
 pub struct RateForForecast {

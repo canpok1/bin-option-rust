@@ -1,6 +1,11 @@
 use chrono::NaiveDate;
 use smartcore::{
-    ensemble::random_forest_regressor::RandomForestRegressor, neighbors::knn_regressor::KNNRegressor, math::distance::euclidian, linear::{linear_regression::LinearRegression, ridge_regression::RidgeRegression, lasso::Lasso, elastic_net::ElasticNet, logistic_regression::LogisticRegression}, linalg::naive::dense_matrix::DenseMatrix, svm::{RBFKernel, svr::SVR}
+    ensemble::random_forest_regressor::RandomForestRegressor,
+    neighbors::knn_regressor::KNNRegressor,
+    math::distance::euclidian,
+    linear::{linear_regression::LinearRegression, ridge_regression::RidgeRegression, lasso::Lasso, elastic_net::ElasticNet, logistic_regression::LogisticRegression},
+    linalg::naive::dense_matrix::DenseMatrix,
+    svm::{RBFKernel, svr::SVR},
 };
 
 use crate::{error::{MyResult, MyError}, domain};

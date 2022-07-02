@@ -48,6 +48,8 @@ services:
       - trading-bot-network
   forecast-batch:
     image: ghcr.io/canpok1/bin-option-rust/forecast-batch:latest
+    environment:
+      - CRON_SCHEDULE=0 * * * * *
     env_file:
       - local.env
     networks:

@@ -16,6 +16,7 @@ category = "MyCommand"
 workspace = false
 command = "cargo"
 args = ["run", "-p", "forecast-batch"]
+env = { "CRON_SCHEDULE" = "0 * * * * *" }
 
 [tasks.run_forecast_server]
 description = "Run forecast-server"

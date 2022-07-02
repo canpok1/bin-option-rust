@@ -207,7 +207,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
     let mut best_model:Option<&ForecastModel> = None;
     let mut best_mne:Option<f64> = None;
     for m in models.iter() {
-        let y = m.predict(&test_x)?;
+        let y = m.predict_for_training(&test_x)?;
 
         let mne = mean_squared_error(&test_y, &y);
         info!("MSE: {:.6}, model: {}", mne, m);
@@ -226,7 +226,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
     }
 
     let best_model = best_model.unwrap();
-    let y = best_model.predict(&test_x)?;
+    let y = best_model.predict_for_training(&test_x)?;
     for row in 0..test_y.len() {
         let want = test_y[row];
         let got = y[row];
