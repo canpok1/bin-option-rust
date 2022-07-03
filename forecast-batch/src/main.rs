@@ -79,6 +79,15 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
             }
 
             for model in &models {
+                let input_data_size = model.get_input_data_size()?;
+                if input_data_size != config.forecast_input_size {
+                    warn!(
+                        "input data size is not match, skip model no {}. size(model): {}, size(batch): {}",
+                        model.get_no()?, input_data_size, config.forecast_input_size
+                    );
+                    continue;
+                }
+
                 let result = ForecastResult::new(
                     rate.id.to_string(),
                     model.get_no()?,

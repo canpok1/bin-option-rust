@@ -31,6 +31,7 @@ pub struct ForecastModelRecord {
     pub model_no: i32,
     pub model_type: u8,
     pub model_data: Vec<u8>,
+    pub input_data_size: usize,
     pub memo: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -42,6 +43,7 @@ impl ForecastModelRecord {
         model_no: i32,
         model_type: u8,
         model_data: Vec<u8>,
+        input_data_size: usize,
         memo: String,
     ) -> MyResult<ForecastModelRecord> {
         let dummy = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
@@ -50,6 +52,7 @@ impl ForecastModelRecord {
             model_no,
             model_type,
             model_data,
+            input_data_size,
             memo,
             created_at: dummy.clone(),
             updated_at: dummy.clone(),
@@ -62,6 +65,7 @@ impl ForecastModelRecord {
                 pair: self.pair.clone(),
                 no: self.model_no,
                 model: bincode::deserialize::<RandomForestRegressor<f64>>(&self.model_data)?,
+                input_data_size: self.input_data_size,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_KNN => Ok(domain::model::ForecastModel::KNN {
@@ -70,6 +74,7 @@ impl ForecastModelRecord {
                 model: bincode::deserialize::<KNNRegressor<f64, euclidian::Euclidian>>(
                     &self.model_data,
                 )?,
+                input_data_size: self.input_data_size,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_LINEAR => Ok(domain::model::ForecastModel::Linear {
@@ -78,6 +83,7 @@ impl ForecastModelRecord {
                 model: bincode::deserialize::<LinearRegression<f64, DenseMatrix<f64>>>(
                     &self.model_data,
                 )?,
+                input_data_size: self.input_data_size,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_RIDGE => Ok(domain::model::ForecastModel::Ridge {
@@ -86,18 +92,21 @@ impl ForecastModelRecord {
                 model: bincode::deserialize::<RidgeRegression<f64, DenseMatrix<f64>>>(
                     &self.model_data,
                 )?,
+                input_data_size: self.input_data_size,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_LASSO => Ok(domain::model::ForecastModel::LASSO {
                 pair: self.pair.clone(),
                 no: self.model_no,
                 model: bincode::deserialize::<Lasso<f64, DenseMatrix<f64>>>(&self.model_data)?,
+                input_data_size: self.input_data_size,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_ELASTIC_NET => Ok(domain::model::ForecastModel::ElasticNet {
                 pair: self.pair.clone(),
                 no: self.model_no,
                 model: bincode::deserialize::<ElasticNet<f64, DenseMatrix<f64>>>(&self.model_data)?,
+                input_data_size: self.input_data_size,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_LOGISTIC => Ok(domain::model::ForecastModel::Logistic {
@@ -106,6 +115,7 @@ impl ForecastModelRecord {
                 model: bincode::deserialize::<LogisticRegression<f64, DenseMatrix<f64>>>(
                     &self.model_data,
                 )?,
+                input_data_size: self.input_data_size,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_SVR => Ok(domain::model::ForecastModel::SVR {
@@ -114,6 +124,7 @@ impl ForecastModelRecord {
                 model: bincode::deserialize::<SVR<f64, DenseMatrix<f64>, RBFKernel<f64>>>(
                     &self.model_data,
                 )?,
+                input_data_size: self.input_data_size,
                 memo: self.memo.clone(),
             }),
             _ => Err(Box::new(MyError::UnknownModelType {

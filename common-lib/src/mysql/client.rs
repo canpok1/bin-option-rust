@@ -218,7 +218,7 @@ impl Client for DefaultClient {
 
     fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()> {
         let q = format!(
-            "INSERT INTO {} (pair, model_no, model_type, model_data, memo) VALUES (:pair, :no, :type, :data, :memo) ON DUPLICATE KEY UPDATE model_type = :type, model_data = :data, memo = :memo;",
+            "INSERT INTO {} (pair, model_no, model_type, model_data, input_data_size, memo) VALUES (:pair, :no, :type, :data, :input_data_size, :memo) ON DUPLICATE KEY UPDATE model_type = :type, model_data = :data, memo = :memo;",
             TABLE_NAME_FORECAST_MODEL
         );
         let p = match m {
@@ -226,6 +226,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
+                input_data_size,
                 memo,
             } => {
                 params! {
@@ -233,6 +234,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_RANDOM_FOREST,
                     "data" => m.serialize_model_data()?,
+                    "input_data_size" => input_data_size,
                     "memo" => memo,
                 }
             }
@@ -240,6 +242,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
+                input_data_size,
                 memo,
             } => {
                 params! {
@@ -247,6 +250,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_KNN,
                     "data" => m.serialize_model_data()?,
+                    "input_data_size" => input_data_size,
                     "memo" => memo,
                 }
             }
@@ -254,6 +258,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
+                input_data_size,
                 memo,
             } => {
                 params! {
@@ -261,6 +266,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_LINEAR,
                     "data" => m.serialize_model_data()?,
+                    "input_data_size" => input_data_size,
                     "memo" => memo,
                 }
             }
@@ -268,6 +274,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
+                input_data_size,
                 memo,
             } => {
                 params! {
@@ -275,6 +282,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_RIDGE,
                     "data" => m.serialize_model_data()?,
+                    "input_data_size" => input_data_size,
                     "memo" => memo,
                 }
             }
@@ -282,6 +290,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
+                input_data_size,
                 memo,
             } => {
                 params! {
@@ -289,6 +298,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_LASSO,
                     "data" => m.serialize_model_data()?,
+                    "input_data_size" => input_data_size,
                     "memo" => memo,
                 }
             }
@@ -296,6 +306,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
+                input_data_size,
                 memo,
             } => {
                 params! {
@@ -303,6 +314,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_ELASTIC_NET,
                     "data" => m.serialize_model_data()?,
+                    "input_data_size" => input_data_size,
                     "memo" => memo,
                 }
             }
@@ -310,6 +322,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
+                input_data_size,
                 memo,
             } => {
                 params! {
@@ -317,6 +330,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_LOGISTIC,
                     "data" => m.serialize_model_data()?,
+                    "input_data_size" => input_data_size,
                     "memo" => memo,
                 }
             }
@@ -324,6 +338,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
+                input_data_size,
                 memo,
             } => {
                 params! {
@@ -331,6 +346,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_SVR,
                     "data" => m.serialize_model_data()?,
+                    "input_data_size" => input_data_size,
                     "memo" => memo,
                 }
             }
@@ -349,7 +365,7 @@ impl Client for DefaultClient {
         no: i32,
     ) -> MyResult<Option<ForecastModel>> {
         let q = format!(
-            "SELECT pair, model_no, model_type, model_data, memo, created_at, updated_at FROM {} WHERE pair = :pair AND model_no = :no",
+            "SELECT pair, model_no, model_type, model_data, input_data_size, memo, created_at, updated_at FROM {} WHERE pair = :pair AND model_no = :no",
             TABLE_NAME_FORECAST_MODEL
         );
         let p = params! {
@@ -358,14 +374,23 @@ impl Client for DefaultClient {
         };
         log::debug!("query: {}, pair: {}, no: {}", q, pair, no);
 
-        if let Some((pair, model_no, model_type, model_data, memo, created_at, updated_at)) =
-            tx.exec_first(q, p)?
+        if let Some((
+            pair,
+            model_no,
+            model_type,
+            model_data,
+            input_data_size,
+            memo,
+            created_at,
+            updated_at,
+        )) = tx.exec_first(q, p)?
         {
             let record = ForecastModelRecord {
                 pair,
                 model_no,
                 model_type,
                 model_data,
+                input_data_size,
                 memo,
                 created_at,
                 updated_at,
@@ -382,7 +407,7 @@ impl Client for DefaultClient {
         pair: &str,
     ) -> MyResult<Vec<ForecastModel>> {
         let q = format!(
-            "SELECT pair, model_no, model_type, model_data, memo, created_at, updated_at FROM {} WHERE pair = :pair",
+            "SELECT pair, model_no, model_type, model_data, input_data_size, memo, created_at, updated_at FROM {} WHERE pair = :pair",
             TABLE_NAME_FORECAST_MODEL
         );
         let p = params! {
@@ -394,13 +419,22 @@ impl Client for DefaultClient {
         let mut result = tx.exec_iter(q, p)?;
         while let Some(result_set) = result.next_set() {
             for row in result_set? {
-                let (pair, model_no, model_type, model_data, memo, created_at, updated_at) =
-                    from_row(row?);
+                let (
+                    pair,
+                    model_no,
+                    model_type,
+                    model_data,
+                    input_data_size,
+                    memo,
+                    created_at,
+                    updated_at,
+                ) = from_row(row?);
                 let record = ForecastModelRecord {
                     pair,
                     model_no,
                     model_type,
                     model_data,
+                    input_data_size,
                     memo,
                     created_at,
                     updated_at,

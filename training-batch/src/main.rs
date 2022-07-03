@@ -92,7 +92,15 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
 
     let mut models: Vec<ForecastModel> = vec![];
     if let Some(m) = load_existing_model(config, mysql_cli)? {
-        models.push(m);
+        let input_data_size = m.get_input_data_size()?;
+        if input_data_size == config.forecast_input_size {
+            models.push(m);
+        } else {
+            warn!(
+                "input data size is not match, not use existing model. model: {}, training: {}",
+                input_data_size, config.forecast_input_size
+            );
+        }
     }
     for index in 1..=config.training_count {
         debug!("training RandomForest {:2} ...", index);
@@ -101,6 +109,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             pair: config.currency_pair.clone(),
             no: config.forecast_model_no,
             model: RandomForestRegressor::fit(&train_x, &train_y, Default::default())?,
+            input_data_size: config.forecast_input_size,
             memo: "RandomForest".to_string(),
         };
         models.push(m);
@@ -117,6 +126,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             pair: config.currency_pair.clone(),
             no: config.forecast_model_no,
             model: r,
+            input_data_size: config.forecast_input_size,
             memo: "KNN".to_string(),
         };
         models.push(m);
@@ -129,6 +139,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             pair: config.currency_pair.clone(),
             no: config.forecast_model_no,
             model: r,
+            input_data_size: config.forecast_input_size,
             memo: "Linear".to_string(),
         };
         models.push(m);
@@ -145,6 +156,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             pair: config.currency_pair.clone(),
             no: config.forecast_model_no,
             model: r,
+            input_data_size: config.forecast_input_size,
             memo: "Ridge".to_string(),
         };
         models.push(m);
@@ -161,6 +173,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             pair: config.currency_pair.clone(),
             no: config.forecast_model_no,
             model: r,
+            input_data_size: config.forecast_input_size,
             memo: "LASSO".to_string(),
         };
         models.push(m);
@@ -179,6 +192,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             pair: config.currency_pair.clone(),
             no: config.forecast_model_no,
             model: r,
+            input_data_size: config.forecast_input_size,
             memo: "ElasticNet".to_string(),
         };
         models.push(m);
@@ -215,6 +229,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             pair: config.currency_pair.clone(),
             no: config.forecast_model_no,
             model: r,
+            input_data_size: config.forecast_input_size,
             memo: "SVR".to_string(),
         };
         models.push(m);
@@ -307,7 +322,8 @@ fn load_existing_model(
 ) -> MyResult<Option<ForecastModel>> {
     let mut model: Option<ForecastModel> = None;
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
-        model = mysql_cli.select_forecast_model(tx, &config.currency_pair, 0)?;
+        model =
+            mysql_cli.select_forecast_model(tx, &config.currency_pair, config.forecast_model_no)?;
         Ok(())
     })?;
     Ok(model)
