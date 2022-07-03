@@ -46,7 +46,7 @@ paths:
       summary: レート履歴を新規登録します
       tags:
       - rates
-  /forecast/after5min/{rateId}:
+  /forecast/after5min/{rateId}/{modelNo}:
     get:
       parameters:
       - description: レート履歴ID
@@ -57,19 +57,28 @@ paths:
         schema:
           type: string
         style: simple
+      - description: モデルNo
+        explode: false
+        in: path
+        name: modelNo
+        required: true
+        schema:
+          format: int32
+          type: integer
+        style: simple
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/_forecast_after5min__rateId__get_200_response'
+                $ref: '#/components/schemas/_forecast_after5min__rateId___modelNo__get_200_response'
           description: 取得成功
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: 取得失敗（レート情報が見つからない）
+          description: 取得失敗（レート情報もしくはモデルが見つからない）
         "500":
           content:
             application/json:
@@ -146,7 +155,7 @@ components:
       - expire
       - rateId
       type: object
-    _forecast_after5min__rateId__get_200_response:
+    _forecast_after5min__rateId___modelNo__get_200_response:
       description: 成功時の情報
       example:
         result:

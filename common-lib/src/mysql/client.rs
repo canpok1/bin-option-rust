@@ -73,10 +73,11 @@ pub trait Client {
         tx: &mut Transaction,
         results: &Vec<ForecastResult>,
     ) -> MyResult<()>;
-    fn select_forecast_results_by_rate_id(
+    fn select_forecast_results_by_rate_id_and_model_no(
         &self,
         tx: &mut Transaction,
         rate_id: &str,
+        model_no: i32,
     ) -> MyResult<Option<ForecastResult>>;
     fn delete_forecast_results_expired(&self, tx: &mut Transaction) -> MyResult<()>;
 }
@@ -595,23 +596,25 @@ impl Client for DefaultClient {
         Ok(())
     }
 
-    fn select_forecast_results_by_rate_id(
+    fn select_forecast_results_by_rate_id_and_model_no(
         &self,
         tx: &mut Transaction,
         rate_id: &str,
+        model_no: i32,
     ) -> MyResult<Option<ForecastResult>> {
         let q = format!(
             r#"
                 SELECT id, rate_id, model_no, forecast_type, result, memo, created_at, updated_at
                 FROM {}
-                WHERE rate_id = :rate_id;
+                WHERE rate_id = :rate_id AND model_no = :model_no;
             "#,
             TABLE_NAME_FORECAST_RESULT,
         );
         let p = params! {
             "rate_id" => rate_id,
+            "model_no" => model_no,
         };
-        log::debug!("query: {}, rate_id: {}", q, rate_id);
+        log::debug!("query: {}, rate_id: {}, model_no: {}", q, rate_id, model_no);
 
         if let Some((id, rate_id, model_no, forecast_type, result, memo, created_at, updated_at)) =
             tx.exec_first(q, p)?

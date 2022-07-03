@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use common_lib::{
-    domain::model::{ForecastResult, RateForForecast},
+    domain::model::{ForecastModel, ForecastResult, RateForForecast},
     mysql::{self, client::Client},
 };
 use forecast_server_lib::{
     models::{self, RatesPost201Response},
     server::MakeService,
-    Api, ForecastAfter5minRateIdGetResponse, RatesPostResponse,
+    Api, ForecastAfter5minRateIdModelNoGetResponse, RatesPostResponse,
 };
 use log::{info, warn};
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
@@ -53,19 +53,22 @@ where
     C: Has<XSpanIdString> + Send + Sync,
 {
     /// 5分後の予想を取得します
-    async fn forecast_after5min_rate_id_get(
+    async fn forecast_after5min_rate_id_model_no_get(
         &self,
         rate_id: String,
+        model_no: i32,
         context: &C,
-    ) -> Result<ForecastAfter5minRateIdGetResponse, ApiError> {
+    ) -> Result<ForecastAfter5minRateIdModelNoGetResponse, ApiError> {
         let context = context.clone();
         info!(
-            "forecast_after5min_rate_id_get(\"{}\") - X-Span-ID: {:?}",
+            "forecast_after5min_rate_id_model_no_get(\"{}\", {}) - X-Span-ID: {:?}",
             rate_id,
+            model_no,
             context.get().0.clone()
         );
 
         let mut rate: Option<RateForForecast> = None;
+        let mut model: Option<ForecastModel> = None;
         let mut forecast: Option<ForecastResult> = None;
         match self.mysql_cli.with_transaction(|tx| {
             rate = self
@@ -75,10 +78,16 @@ where
                 return Ok(());
             }
 
+            let pair = rate.clone().unwrap().pair;
+
+            model = self.mysql_cli.select_forecast_model(tx, &pair, model_no)?;
+            if model.is_none() {
+                return Ok(());
+            }
+
             forecast = self
                 .mysql_cli
-                .select_forecast_results_by_rate_id(tx, &rate_id)?;
-
+                .select_forecast_results_by_rate_id_and_model_no(tx, &rate_id, model_no)?;
             Ok(())
         }) {
             Ok(_) => {
@@ -92,8 +101,21 @@ where
                         context.get().0.clone()
                     );
 
-                    return Ok(ForecastAfter5minRateIdGetResponse::Status404(error));
+                    return Ok(ForecastAfter5minRateIdModelNoGetResponse::Status404(error));
                 }
+                if model.is_none() {
+                    let error = models::Error {
+                        message: format!("model is not found, model_no: {}", model_no),
+                    };
+                    warn!(
+                        "error: {:?}, X-Span-ID: {:?}",
+                        error,
+                        context.get().0.clone()
+                    );
+
+                    return Ok(ForecastAfter5minRateIdModelNoGetResponse::Status404(error));
+                }
+
                 let result = if let Some(forecast) = forecast {
                     models::ForecastResult {
                         complete: true,
@@ -111,8 +133,8 @@ where
                     context.get().0.clone()
                 );
 
-                Ok(ForecastAfter5minRateIdGetResponse::Status200(
-                    models::ForecastAfter5minRateIdGet200Response {
+                Ok(ForecastAfter5minRateIdModelNoGetResponse::Status200(
+                    models::ForecastAfter5minRateIdModelNoGet200Response {
                         result: Some(result),
                     },
                 ))
@@ -126,7 +148,7 @@ where
                     error,
                     context.get().0.clone()
                 );
-                Ok(ForecastAfter5minRateIdGetResponse::Status500(error))
+                Ok(ForecastAfter5minRateIdModelNoGetResponse::Status500(error))
             }
         }
     }

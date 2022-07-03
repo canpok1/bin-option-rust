@@ -93,7 +93,7 @@ impl<C> Server<C> {
 
 use forecast_server_lib::{
     Api,
-    ForecastAfter5minRateIdGetResponse,
+    ForecastAfter5minRateIdModelNoGetResponse,
     RatesPostResponse,
 };
 use forecast_server_lib::server::MakeService;
@@ -104,13 +104,14 @@ use swagger::ApiError;
 impl<C> Api<C> for Server<C> where C: Has<XSpanIdString> + Send + Sync
 {
     /// 5分後の予想を取得します
-    async fn forecast_after5min_rate_id_get(
+    async fn forecast_after5min_rate_id_model_no_get(
         &self,
         rate_id: String,
-        context: &C) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>
+        model_no: i32,
+        context: &C) -> Result<ForecastAfter5minRateIdModelNoGetResponse, ApiError>
     {
         let context = context.clone();
-        info!("forecast_after5min_rate_id_get(\"{}\") - X-Span-ID: {:?}", rate_id, context.get().0.clone());
+        info!("forecast_after5min_rate_id_model_no_get(\"{}\", {}) - X-Span-ID: {:?}", rate_id, model_no, context.get().0.clone());
         Err(ApiError("Generic failure".into()))
     }
 

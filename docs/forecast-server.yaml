@@ -55,7 +55,7 @@ paths:
                 $ref: "#/components/schemas/Error"
       tags:
         - rates
-  /forecast/after5min/{rateId}:
+  /forecast/after5min/{rateId}/{modelNo}:
     get:
       summary: 5分後の予想を取得します
       parameters:
@@ -65,6 +65,13 @@ paths:
           description: レート履歴ID
           schema:
             type: string
+        - name: modelNo
+          in: path
+          required: true
+          description: モデルNo
+          schema:
+            type: integer
+            format: int32
       responses:
         "200":
           description: 取得成功
@@ -79,7 +86,7 @@ paths:
                   result:
                     $ref: "#/components/schemas/ForecastResult"
         "404":
-          description: 取得失敗（レート情報が見つからない）
+          description: 取得失敗（レート情報もしくはモデルが見つからない）
           content:
             application/json:
               schema:

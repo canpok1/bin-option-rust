@@ -14,12 +14,12 @@ pub const API_VERSION: &'static str = "1.0.0";
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[must_use]
-pub enum ForecastAfter5minRateIdGetResponse {
+pub enum ForecastAfter5minRateIdModelNoGetResponse {
     /// 取得成功
     Status200
-    (models::ForecastAfter5minRateIdGet200Response)
+    (models::ForecastAfter5minRateIdModelNoGet200Response)
     ,
-    /// 取得失敗（レート情報が見つからない）
+    /// 取得失敗（レート情報もしくはモデルが見つからない）
     Status404
     (models::Error)
     ,
@@ -56,10 +56,11 @@ pub trait Api<C: Send + Sync> {
     }
 
     /// 5分後の予想を取得します
-    async fn forecast_after5min_rate_id_get(
+    async fn forecast_after5min_rate_id_model_no_get(
         &self,
         rate_id: String,
-        context: &C) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>;
+        model_no: i32,
+        context: &C) -> Result<ForecastAfter5minRateIdModelNoGetResponse, ApiError>;
 
     /// レート履歴を新規登録します
     async fn rates_post(
@@ -78,10 +79,11 @@ pub trait ApiNoContext<C: Send + Sync> {
     fn context(&self) -> &C;
 
     /// 5分後の予想を取得します
-    async fn forecast_after5min_rate_id_get(
+    async fn forecast_after5min_rate_id_model_no_get(
         &self,
         rate_id: String,
-        ) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>;
+        model_no: i32,
+        ) -> Result<ForecastAfter5minRateIdModelNoGetResponse, ApiError>;
 
     /// レート履歴を新規登録します
     async fn rates_post(
@@ -115,13 +117,14 @@ impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ApiNoContext<C> for Contex
     }
 
     /// 5分後の予想を取得します
-    async fn forecast_after5min_rate_id_get(
+    async fn forecast_after5min_rate_id_model_no_get(
         &self,
         rate_id: String,
-        ) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>
+        model_no: i32,
+        ) -> Result<ForecastAfter5minRateIdModelNoGetResponse, ApiError>
     {
         let context = self.context().clone();
-        self.api().forecast_after5min_rate_id_get(rate_id, &context).await
+        self.api().forecast_after5min_rate_id_model_no_get(rate_id, model_no, &context).await
     }
 
     /// レート履歴を新規登録します

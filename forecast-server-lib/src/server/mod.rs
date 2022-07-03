@@ -22,7 +22,7 @@ pub use crate::context;
 type ServiceFuture = BoxFuture<'static, Result<Response<Body>, crate::ServiceError>>;
 
 use crate::{Api,
-     ForecastAfter5minRateIdGetResponse,
+     ForecastAfter5minRateIdModelNoGetResponse,
      RatesPostResponse
 };
 
@@ -31,16 +31,16 @@ mod paths {
 
     lazy_static! {
         pub static ref GLOBAL_REGEX_SET: regex::RegexSet = regex::RegexSet::new(vec![
-            r"^/forecast/after5min/(?P<rateId>[^/?#]*)$",
+            r"^/forecast/after5min/(?P<rateId>[^/?#]*)/(?P<modelNo>[^/?#]*)$",
             r"^/rates$"
         ])
         .expect("Unable to create global regex set");
     }
-    pub(crate) static ID_FORECAST_AFTER5MIN_RATEID: usize = 0;
+    pub(crate) static ID_FORECAST_AFTER5MIN_RATEID_MODELNO: usize = 0;
     lazy_static! {
-        pub static ref REGEX_FORECAST_AFTER5MIN_RATEID: regex::Regex =
-            regex::Regex::new(r"^/forecast/after5min/(?P<rateId>[^/?#]*)$")
-                .expect("Unable to create regex for FORECAST_AFTER5MIN_RATEID");
+        pub static ref REGEX_FORECAST_AFTER5MIN_RATEID_MODELNO: regex::Regex =
+            regex::Regex::new(r"^/forecast/after5min/(?P<rateId>[^/?#]*)/(?P<modelNo>[^/?#]*)$")
+                .expect("Unable to create regex for FORECAST_AFTER5MIN_RATEID_MODELNO");
     }
     pub(crate) static ID_RATES: usize = 1;
 }
@@ -147,15 +147,15 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
 
         match &method {
 
-            // ForecastAfter5minRateIdGet - GET /forecast/after5min/{rateId}
-            &hyper::Method::GET if path.matched(paths::ID_FORECAST_AFTER5MIN_RATEID) => {
+            // ForecastAfter5minRateIdModelNoGet - GET /forecast/after5min/{rateId}/{modelNo}
+            &hyper::Method::GET if path.matched(paths::ID_FORECAST_AFTER5MIN_RATEID_MODELNO) => {
                 // Path parameters
                 let path: &str = &uri.path().to_string();
                 let path_params =
-                    paths::REGEX_FORECAST_AFTER5MIN_RATEID
+                    paths::REGEX_FORECAST_AFTER5MIN_RATEID_MODELNO
                     .captures(&path)
                     .unwrap_or_else(||
-                        panic!("Path {} matched RE FORECAST_AFTER5MIN_RATEID in set but failed match against \"{}\"", path, paths::REGEX_FORECAST_AFTER5MIN_RATEID.as_str())
+                        panic!("Path {} matched RE FORECAST_AFTER5MIN_RATEID_MODELNO in set but failed match against \"{}\"", path, paths::REGEX_FORECAST_AFTER5MIN_RATEID_MODELNO.as_str())
                     );
 
                 let param_rate_id = match percent_encoding::percent_decode(path_params["rateId"].as_bytes()).decode_utf8() {
@@ -172,8 +172,23 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
                                         .expect("Unable to create Bad Request response for invalid percent decode"))
                 };
 
-                                let result = api_impl.forecast_after5min_rate_id_get(
+                let param_model_no = match percent_encoding::percent_decode(path_params["modelNo"].as_bytes()).decode_utf8() {
+                    Ok(param_model_no) => match param_model_no.parse::<i32>() {
+                        Ok(param_model_no) => param_model_no,
+                        Err(e) => return Ok(Response::builder()
+                                        .status(StatusCode::BAD_REQUEST)
+                                        .body(Body::from(format!("Couldn't parse path parameter modelNo: {}", e)))
+                                        .expect("Unable to create Bad Request response for invalid path parameter")),
+                    },
+                    Err(_) => return Ok(Response::builder()
+                                        .status(StatusCode::BAD_REQUEST)
+                                        .body(Body::from(format!("Couldn't percent-decode path parameter as UTF-8: {}", &path_params["modelNo"])))
+                                        .expect("Unable to create Bad Request response for invalid percent decode"))
+                };
+
+                                let result = api_impl.forecast_after5min_rate_id_model_no_get(
                                             param_rate_id,
+                                            param_model_no,
                                         &context
                                     ).await;
                                 let mut response = Response::new(Body::empty());
@@ -184,36 +199,36 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
 
                                         match result {
                                             Ok(rsp) => match rsp {
-                                                ForecastAfter5minRateIdGetResponse::Status200
+                                                ForecastAfter5minRateIdModelNoGetResponse::Status200
                                                     (body)
                                                 => {
                                                     *response.status_mut() = StatusCode::from_u16(200).expect("Unable to turn 200 into a StatusCode");
                                                     response.headers_mut().insert(
                                                         CONTENT_TYPE,
                                                         HeaderValue::from_str("application/json")
-                                                            .expect("Unable to create Content-Type header for FORECAST_AFTER5MIN_RATE_ID_GET_STATUS200"));
+                                                            .expect("Unable to create Content-Type header for FORECAST_AFTER5MIN_RATE_ID_MODEL_NO_GET_STATUS200"));
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
-                                                ForecastAfter5minRateIdGetResponse::Status404
+                                                ForecastAfter5minRateIdModelNoGetResponse::Status404
                                                     (body)
                                                 => {
                                                     *response.status_mut() = StatusCode::from_u16(404).expect("Unable to turn 404 into a StatusCode");
                                                     response.headers_mut().insert(
                                                         CONTENT_TYPE,
                                                         HeaderValue::from_str("application/json")
-                                                            .expect("Unable to create Content-Type header for FORECAST_AFTER5MIN_RATE_ID_GET_STATUS404"));
+                                                            .expect("Unable to create Content-Type header for FORECAST_AFTER5MIN_RATE_ID_MODEL_NO_GET_STATUS404"));
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
-                                                ForecastAfter5minRateIdGetResponse::Status500
+                                                ForecastAfter5minRateIdModelNoGetResponse::Status500
                                                     (body)
                                                 => {
                                                     *response.status_mut() = StatusCode::from_u16(500).expect("Unable to turn 500 into a StatusCode");
                                                     response.headers_mut().insert(
                                                         CONTENT_TYPE,
                                                         HeaderValue::from_str("application/json")
-                                                            .expect("Unable to create Content-Type header for FORECAST_AFTER5MIN_RATE_ID_GET_STATUS500"));
+                                                            .expect("Unable to create Content-Type header for FORECAST_AFTER5MIN_RATE_ID_MODEL_NO_GET_STATUS500"));
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
@@ -342,7 +357,7 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
                         }
             },
 
-            _ if path.matched(paths::ID_FORECAST_AFTER5MIN_RATEID) => method_not_allowed(),
+            _ if path.matched(paths::ID_FORECAST_AFTER5MIN_RATEID_MODELNO) => method_not_allowed(),
             _ if path.matched(paths::ID_RATES) => method_not_allowed(),
             _ => Ok(Response::builder().status(StatusCode::NOT_FOUND)
                     .body(Body::empty())
@@ -357,8 +372,8 @@ impl<T> RequestParser<T> for ApiRequestParser {
     fn parse_operation_id(request: &Request<T>) -> Option<&'static str> {
         let path = paths::GLOBAL_REGEX_SET.matches(request.uri().path());
         match request.method() {
-            // ForecastAfter5minRateIdGet - GET /forecast/after5min/{rateId}
-            &hyper::Method::GET if path.matched(paths::ID_FORECAST_AFTER5MIN_RATEID) => Some("ForecastAfter5minRateIdGet"),
+            // ForecastAfter5minRateIdModelNoGet - GET /forecast/after5min/{rateId}/{modelNo}
+            &hyper::Method::GET if path.matched(paths::ID_FORECAST_AFTER5MIN_RATEID_MODELNO) => Some("ForecastAfter5minRateIdModelNoGet"),
             // RatesPost - POST /rates
             &hyper::Method::POST if path.matched(paths::ID_RATES) => Some("RatesPost"),
             _ => None,
