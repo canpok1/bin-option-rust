@@ -1,5 +1,6 @@
 env_files = [
     "./local.env",
+    "./local-dev.env",
 ]
 
 [tasks.build_common_lib]
