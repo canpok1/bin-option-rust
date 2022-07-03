@@ -55,19 +55,23 @@ fn run(config: &Config, mysql_cli: &mysql::client::DefaultClient) {
 
     let border = (Utc::now() - Duration::days(config.expire_date_count)).naive_utc();
     match mysql_cli.with_transaction(|tx| -> MyResult<()> {
-        mysql_cli.delete_old_rates_for_training(tx, &border)
+        mysql_cli.delete_old_rates_for_training(tx, &border)?;
+        info!(
+            "successful cleaning table 'rate_for_training', border:{}",
+            border
+        );
+
+        mysql_cli.delete_forecast_results_expired(tx)?;
+        info!("successful cleaning table 'forecast_results'");
+
+        mysql_cli.delete_rates_for_forecast_expired(tx)?;
+        info!("successful cleaning table 'rates_for_forecast'");
+
+        Ok(())
     }) {
-        Ok(_) => {
-            info!(
-                "successful cleaning table 'rate_for_training', border:{}",
-                border
-            );
-        }
+        Ok(_) => {}
         Err(err) => {
-            error!(
-                "failed to clean table 'rate_for_training', border:{}, error: {}",
-                border, err
-            );
+            error!("failed to clean , error: {}", err);
         }
     };
 }

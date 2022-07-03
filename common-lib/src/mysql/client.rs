@@ -66,6 +66,7 @@ pub trait Client {
         tx: &mut Transaction,
         id: &str,
     ) -> MyResult<Option<RateForForecast>>;
+    fn delete_rates_for_forecast_expired(&self, tx: &mut Transaction) -> MyResult<()>;
 
     fn insert_forecast_results(
         &self,
@@ -77,6 +78,7 @@ pub trait Client {
         tx: &mut Transaction,
         rate_id: &str,
     ) -> MyResult<Option<ForecastResult>>;
+    fn delete_forecast_results_expired(&self, tx: &mut Transaction) -> MyResult<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -559,6 +561,16 @@ impl Client for DefaultClient {
         }
     }
 
+    fn delete_rates_for_forecast_expired(&self, tx: &mut Transaction) -> MyResult<()> {
+        let q = format!(
+            "DELETE FROM {} WHERE expire < CURRENT_TIMESTAMP();",
+            TABLE_NAME_RATE_FOR_FORECAST
+        );
+        tx.query_drop(q)?;
+
+        Ok(())
+    }
+
     fn insert_forecast_results(
         &self,
         tx: &mut Transaction,
@@ -618,5 +630,19 @@ impl Client for DefaultClient {
         } else {
             Ok(None)
         }
+    }
+
+    fn delete_forecast_results_expired(&self, tx: &mut Transaction) -> MyResult<()> {
+        let q = format!(
+            r#"
+                DELETE FROM {} WHERE rate_id IN (
+                    SELECT id FROM {} WHERE expire < CURRENT_TIMESTAMP()
+                );
+            "#,
+            TABLE_NAME_FORECAST_RESULT, TABLE_NAME_RATE_FOR_FORECAST
+        );
+        tx.query_drop(q)?;
+
+        Ok(())
     }
 }
