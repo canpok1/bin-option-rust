@@ -1,11 +1,11 @@
-use job_scheduler::{JobScheduler, Job};
+use job_scheduler::{Job, JobScheduler};
 use log::info;
 
 use crate::error::MyResult;
 
-pub fn start_scheduler<F>(cron_schedule: &str, f:F) -> MyResult<()> 
+pub fn start_scheduler<F>(cron_schedule: &str, f: F) -> MyResult<()>
 where
-    F: Fn()
+    F: Fn(),
 {
     let mut sched = JobScheduler::new();
 

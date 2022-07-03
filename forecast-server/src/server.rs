@@ -1,15 +1,13 @@
-use chrono::{Utc, Duration};
+use async_trait::async_trait;
+use chrono::{Duration, Utc};
+use common_lib::{
+    domain::model::RateForForecast,
+    mysql::{self, client::Client},
+};
 use forecast_server_lib::{
     models::{self, RatesPost201Response},
     server::MakeService,
-    Api,
-    ForecastAfter5minRateIdGetResponse,
-    RatesPostResponse,
-};
-use async_trait::async_trait;
-use common_lib::{
-    mysql::{self, client::Client},
-    domain::model::RateForForecast,
+    Api, ForecastAfter5minRateIdGetResponse, RatesPostResponse,
 };
 use log::info;
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
@@ -58,10 +56,14 @@ where
     async fn forecast_after5min_rate_id_get(
         &self,
         rate_id: String,
-        context: &C) -> Result<ForecastAfter5minRateIdGetResponse, ApiError>
-    {
+        context: &C,
+    ) -> Result<ForecastAfter5minRateIdGetResponse, ApiError> {
         let context = context.clone();
-        info!("forecast_after5min_rate_id_get(\"{}\") - X-Span-ID: {:?}", rate_id, context.get().0.clone());
+        info!(
+            "forecast_after5min_rate_id_get(\"{}\") - X-Span-ID: {:?}",
+            rate_id,
+            context.get().0.clone()
+        );
         Err(ApiError("Generic failure".into()))
     }
 
@@ -69,10 +71,14 @@ where
     async fn rates_post(
         &self,
         history: models::History,
-        context: &C) -> Result<RatesPostResponse, ApiError>
-    {
+        context: &C,
+    ) -> Result<RatesPostResponse, ApiError> {
         let context = context.clone();
-        info!("rates_post({:?}) - X-Span-ID: {:?}", history, context.get().0.clone());
+        info!(
+            "rates_post({:?}) - X-Span-ID: {:?}",
+            history,
+            context.get().0.clone()
+        );
 
         if history.rate_histories.is_empty() {
             return Ok(RatesPostResponse::Status400(models::Error {
@@ -81,30 +87,25 @@ where
         }
 
         let expire = (Utc::now() + Duration::hours(self.rate_expire_hour)).naive_utc();
-        let mut id:Option<String> = None;
-        match self.mysql_cli.with_transaction(
-            |tx| {
-                let rate = RateForForecast::new(
-                    history.pair.clone(),
-                    history.rate_histories.clone(),
-                    expire.clone(),
-                    "inserted by forecast-server".to_string(),
-                )?;
+        let mut id: Option<String> = None;
+        match self.mysql_cli.with_transaction(|tx| {
+            let rate = RateForForecast::new(
+                history.pair.clone(),
+                history.rate_histories.clone(),
+                expire.clone(),
+                "inserted by forecast-server".to_string(),
+            )?;
 
-                id = Some(self.mysql_cli.insert_rates_for_forecast(tx, &rate)?);
-                Ok(())
-            }
-        ) {
-            Ok(_) => {
-                Ok(RatesPostResponse::Status201(RatesPost201Response{
-                    rate_id: id.unwrap(), expire: expire.format("%Y-%m-%d %H:%M:%S").to_string(),
-                }))
-            }
-            Err(err) => {
-                Ok(RatesPostResponse::Status500(models::Error {
-                    message: format!("internal server error, {}", err),
-                }))
-            }
+            id = Some(self.mysql_cli.insert_rates_for_forecast(tx, &rate)?);
+            Ok(())
+        }) {
+            Ok(_) => Ok(RatesPostResponse::Status201(RatesPost201Response {
+                rate_id: id.unwrap(),
+                expire: expire.format("%Y-%m-%d %H:%M:%S").to_string(),
+            })),
+            Err(err) => Ok(RatesPostResponse::Status500(models::Error {
+                message: format!("internal server error, {}", err),
+            })),
         }
     }
 }

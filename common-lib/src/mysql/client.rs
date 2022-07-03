@@ -1,37 +1,72 @@
 use chrono::NaiveDateTime;
-use mysql::{params, prelude::Queryable, OptsBuilder, Pool, TxOpts, Transaction, Serialized, from_row, from_value, Deserialized};
+use mysql::{
+    from_row, from_value, params, prelude::Queryable, Deserialized, OptsBuilder, Pool, Serialized,
+    Transaction, TxOpts,
+};
 
 use crate::{
-    error::{MyResult},
-    domain::model::{RateForTraining, ForecastModel, RateForForecast, ForecastResult},
+    domain::model::{ForecastModel, ForecastResult, RateForForecast, RateForTraining},
+    error::MyResult,
     mysql::model::ForecastModelRecord,
 };
 
-static TABLE_NAME_RATE_FOR_TRAINING:&str = "rates_for_training";
-static TABLE_NAME_FORECAST_MODEL:&str = "forecast_models";
-static TABLE_NAME_RATE_FOR_FORECAST:&str = "rates_for_forecast";
-static TABLE_NAME_FORECAST_RESULT:&str = "forecast_results";
+static TABLE_NAME_RATE_FOR_TRAINING: &str = "rates_for_training";
+static TABLE_NAME_FORECAST_MODEL: &str = "forecast_models";
+static TABLE_NAME_RATE_FOR_FORECAST: &str = "rates_for_forecast";
+static TABLE_NAME_FORECAST_RESULT: &str = "forecast_results";
 
-
-pub trait Client
-{
+pub trait Client {
     fn with_transaction<F>(&self, f: F) -> MyResult<()>
     where
-        F: FnMut(&mut Transaction) -> MyResult<()>
-    ;
+        F: FnMut(&mut Transaction) -> MyResult<()>;
 
-    fn insert_rates_for_training(&self, tx: &mut Transaction, rates: &Vec<RateForTraining>) -> MyResult<()>;
-    fn delete_old_rates_for_training(&self, tx: &mut Transaction, border: &NaiveDateTime) -> MyResult<()>;
-    fn select_rates_for_training(&self, tx: &mut Transaction, pair: &str, begin: Option<NaiveDateTime>, end: Option<NaiveDateTime>) -> MyResult<Vec<RateForTraining>>;
+    fn insert_rates_for_training(
+        &self,
+        tx: &mut Transaction,
+        rates: &Vec<RateForTraining>,
+    ) -> MyResult<()>;
+    fn delete_old_rates_for_training(
+        &self,
+        tx: &mut Transaction,
+        border: &NaiveDateTime,
+    ) -> MyResult<()>;
+    fn select_rates_for_training(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+        begin: Option<NaiveDateTime>,
+        end: Option<NaiveDateTime>,
+    ) -> MyResult<Vec<RateForTraining>>;
 
     fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()>;
-    fn select_forecast_model(&self, tx: &mut Transaction, pair: &str, no:i32) -> MyResult<Option<ForecastModel>>;
-    fn select_forecast_models(&self, tx: &mut Transaction, pair: &str) -> MyResult<Vec<ForecastModel>>;
+    fn select_forecast_model(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+        no: i32,
+    ) -> MyResult<Option<ForecastModel>>;
+    fn select_forecast_models(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+    ) -> MyResult<Vec<ForecastModel>>;
 
-    fn insert_rates_for_forecast(&self, tx: &mut Transaction, rate: &RateForForecast) -> MyResult<String>;
-    fn select_rates_for_forecast_unforecasted(&self, tx: &mut Transaction, pair: &str) -> MyResult<Vec<RateForForecast>>;
+    fn insert_rates_for_forecast(
+        &self,
+        tx: &mut Transaction,
+        rate: &RateForForecast,
+    ) -> MyResult<String>;
+    fn select_rates_for_forecast_unforecasted(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+    ) -> MyResult<Vec<RateForForecast>>;
 
-    fn insert_forecast_results(&self, tx: &mut Transaction, results: &Vec<ForecastResult>) -> MyResult<()>;
+    fn insert_forecast_results(
+        &self,
+        tx: &mut Transaction,
+        results: &Vec<ForecastResult>,
+    ) -> MyResult<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -60,14 +95,13 @@ impl DefaultClient {
     }
 }
 
-impl Client for DefaultClient
-{
+impl Client for DefaultClient {
     // sample
     // ```
     // use crate::common_lib::error::MyResult;
     // use crate::common_lib::mysql::client::DefaultClient;
     // use crate::common_lib::mysql::client::Client;
-    // 
+    //
     // fn main() -> MyResult<()> {
     //     let client = DefaultClient::new("user", "pass", "127.0.0.1", 3306, "db")?;
     //     client.with_transaction(
@@ -80,7 +114,7 @@ impl Client for DefaultClient
     // ```
     fn with_transaction<F>(&self, mut f: F) -> MyResult<()>
     where
-        F: FnMut(&mut Transaction) -> MyResult<()>
+        F: FnMut(&mut Transaction) -> MyResult<()>,
     {
         match self.pool.get_conn()?.start_transaction(TxOpts::default()) {
             Ok(mut tx) => match f(&mut tx) {
@@ -91,15 +125,17 @@ impl Client for DefaultClient
                         Ok(())
                     }
                 }
-                Err(err) => {
-                    Err(err)
-                }
+                Err(err) => Err(err),
             },
             Err(err) => Err(Box::new(err)),
         }
     }
 
-    fn insert_rates_for_training(&self, tx: &mut Transaction, rates: &Vec<RateForTraining>) -> MyResult<()> {
+    fn insert_rates_for_training(
+        &self,
+        tx: &mut Transaction,
+        rates: &Vec<RateForTraining>,
+    ) -> MyResult<()> {
         tx.exec_batch(
             format!(
                 "INSERT INTO {} (pair, recorded_at, rate) VALUES (:pair, :recorded_at, :rate);",
@@ -117,7 +153,11 @@ impl Client for DefaultClient
         Ok(())
     }
 
-    fn delete_old_rates_for_training(&self, tx: &mut Transaction, border: &NaiveDateTime) -> MyResult<()> {
+    fn delete_old_rates_for_training(
+        &self,
+        tx: &mut Transaction,
+        border: &NaiveDateTime,
+    ) -> MyResult<()> {
         tx.exec_drop(
             format!(
                 "DELETE FROM {} WHERE recorded_at < :border;",
@@ -131,13 +171,25 @@ impl Client for DefaultClient
         Ok(())
     }
 
-    fn select_rates_for_training(&self, tx: &mut Transaction, pair: &str, begin: Option<NaiveDateTime>, end: Option<NaiveDateTime>) -> MyResult<Vec<RateForTraining>> {
-        let mut conditions:Vec<String> = vec![];
+    fn select_rates_for_training(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+        begin: Option<NaiveDateTime>,
+        end: Option<NaiveDateTime>,
+    ) -> MyResult<Vec<RateForTraining>> {
+        let mut conditions: Vec<String> = vec![];
         if let Some(value) = begin {
-            conditions.push(format!("recorded_at >= '{}'", value.format("%Y-%m-%d %H:%M:%S")));
+            conditions.push(format!(
+                "recorded_at >= '{}'",
+                value.format("%Y-%m-%d %H:%M:%S")
+            ));
         }
         if let Some(value) = end {
-            conditions.push(format!("recorded_at <= '{}'", value.format("%Y-%m-%d %H:%M:%S")));
+            conditions.push(format!(
+                "recorded_at <= '{}'",
+                value.format("%Y-%m-%d %H:%M:%S")
+            ));
         }
         let mut where_str = format!("WHERE pair = '{}'", pair);
         if !conditions.is_empty() {
@@ -153,19 +205,16 @@ impl Client for DefaultClient
 
         let result = tx.query_map(
             query,
-            |(pair, recorded_at, rate, created_at, updated_at)| {
-                RateForTraining {
-                    pair,
-                    recorded_at,
-                    rate,
-                    created_at,
-                    updated_at,
-                }
+            |(pair, recorded_at, rate, created_at, updated_at)| RateForTraining {
+                pair,
+                recorded_at,
+                rate,
+                created_at,
+                updated_at,
             },
         );
         Ok(result?)
     }
-
 
     fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()> {
         let q = format!(
@@ -173,7 +222,12 @@ impl Client for DefaultClient
             TABLE_NAME_FORECAST_MODEL
         );
         let p = match m {
-            ForecastModel::RandomForest { pair, no, model: _, memo } => {
+            ForecastModel::RandomForest {
+                pair,
+                no,
+                model: _,
+                memo,
+            } => {
                 params! {
                     "pair" => pair,
                     "no" => no,
@@ -181,8 +235,13 @@ impl Client for DefaultClient
                     "data" => m.serialize_model_data()?,
                     "memo" => memo,
                 }
-            },
-            ForecastModel::KNN { pair, no, model: _, memo } => {
+            }
+            ForecastModel::KNN {
+                pair,
+                no,
+                model: _,
+                memo,
+            } => {
                 params! {
                     "pair" => pair,
                     "no" => no,
@@ -190,8 +249,13 @@ impl Client for DefaultClient
                     "data" => m.serialize_model_data()?,
                     "memo" => memo,
                 }
-            },
-            ForecastModel::Linear { pair, no, model: _, memo } => {
+            }
+            ForecastModel::Linear {
+                pair,
+                no,
+                model: _,
+                memo,
+            } => {
                 params! {
                     "pair" => pair,
                     "no" => no,
@@ -199,8 +263,13 @@ impl Client for DefaultClient
                     "data" => m.serialize_model_data()?,
                     "memo" => memo,
                 }
-            },
-            ForecastModel::Ridge { pair, no, model: _, memo } => {
+            }
+            ForecastModel::Ridge {
+                pair,
+                no,
+                model: _,
+                memo,
+            } => {
                 params! {
                     "pair" => pair,
                     "no" => no,
@@ -208,8 +277,13 @@ impl Client for DefaultClient
                     "data" => m.serialize_model_data()?,
                     "memo" => memo,
                 }
-            },
-            ForecastModel::LASSO { pair, no, model: _, memo } => {
+            }
+            ForecastModel::LASSO {
+                pair,
+                no,
+                model: _,
+                memo,
+            } => {
                 params! {
                     "pair" => pair,
                     "no" => no,
@@ -217,8 +291,13 @@ impl Client for DefaultClient
                     "data" => m.serialize_model_data()?,
                     "memo" => memo,
                 }
-            },
-            ForecastModel::ElasticNet { pair, no, model: _, memo } => {
+            }
+            ForecastModel::ElasticNet {
+                pair,
+                no,
+                model: _,
+                memo,
+            } => {
                 params! {
                     "pair" => pair,
                     "no" => no,
@@ -226,8 +305,13 @@ impl Client for DefaultClient
                     "data" => m.serialize_model_data()?,
                     "memo" => memo,
                 }
-            },
-            ForecastModel::Logistic { pair, no, model: _, memo } => {
+            }
+            ForecastModel::Logistic {
+                pair,
+                no,
+                model: _,
+                memo,
+            } => {
                 params! {
                     "pair" => pair,
                     "no" => no,
@@ -235,8 +319,13 @@ impl Client for DefaultClient
                     "data" => m.serialize_model_data()?,
                     "memo" => memo,
                 }
-            },
-            ForecastModel::SVR { pair, no, model: _, memo } => {
+            }
+            ForecastModel::SVR {
+                pair,
+                no,
+                model: _,
+                memo,
+            } => {
                 params! {
                     "pair" => pair,
                     "no" => no,
@@ -244,16 +333,21 @@ impl Client for DefaultClient
                     "data" => m.serialize_model_data()?,
                     "memo" => memo,
                 }
-            },
+            }
         };
         log::debug!("query: {}, param: {}", q, m);
 
-        tx.exec_drop(q,p)?;
+        tx.exec_drop(q, p)?;
 
         Ok(())
     }
 
-    fn select_forecast_model(&self, tx: &mut Transaction, pair: &str, no:i32) -> MyResult<Option<ForecastModel>> {
+    fn select_forecast_model(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+        no: i32,
+    ) -> MyResult<Option<ForecastModel>> {
         let q = format!(
             "SELECT pair, model_no, model_type, model_data, memo, created_at, updated_at FROM {} WHERE pair = :pair AND model_no = :no",
             TABLE_NAME_FORECAST_MODEL
@@ -264,8 +358,10 @@ impl Client for DefaultClient
         };
         log::debug!("query: {}, pair: {}, no: {}", q, pair, no);
 
-        if let Some((pair, model_no, model_type, model_data, memo, created_at, updated_at)) = tx.exec_first(q, p)? {
-            let record = ForecastModelRecord{
+        if let Some((pair, model_no, model_type, model_data, memo, created_at, updated_at)) =
+            tx.exec_first(q, p)?
+        {
+            let record = ForecastModelRecord {
                 pair,
                 model_no,
                 model_type,
@@ -280,7 +376,11 @@ impl Client for DefaultClient
         }
     }
 
-    fn select_forecast_models(&self, tx: &mut Transaction, pair: &str) -> MyResult<Vec<ForecastModel>> {
+    fn select_forecast_models(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+    ) -> MyResult<Vec<ForecastModel>> {
         let q = format!(
             "SELECT pair, model_no, model_type, model_data, memo, created_at, updated_at FROM {} WHERE pair = :pair",
             TABLE_NAME_FORECAST_MODEL
@@ -290,11 +390,12 @@ impl Client for DefaultClient
         };
         log::debug!("query: {}, pair: {}", q, pair);
 
-        let mut models:Vec<ForecastModel> = vec![];
+        let mut models: Vec<ForecastModel> = vec![];
         let mut result = tx.exec_iter(q, p)?;
         while let Some(result_set) = result.next_set() {
             for row in result_set? {
-                let (pair, model_no, model_type, model_data, memo, created_at, updated_at) = from_row(row?);
+                let (pair, model_no, model_type, model_data, memo, created_at, updated_at) =
+                    from_row(row?);
                 let record = ForecastModelRecord {
                     pair,
                     model_no,
@@ -310,7 +411,11 @@ impl Client for DefaultClient
         Ok(models)
     }
 
-    fn insert_rates_for_forecast(&self, tx: &mut Transaction, rate: &RateForForecast) -> MyResult<String> {
+    fn insert_rates_for_forecast(
+        &self,
+        tx: &mut Transaction,
+        rate: &RateForForecast,
+    ) -> MyResult<String> {
         let id: Option<String> = tx.query_first("SELECT UUID();")?;
         tx.exec_drop(
             format!(
@@ -328,7 +433,11 @@ impl Client for DefaultClient
         Ok(id.unwrap())
     }
 
-    fn select_rates_for_forecast_unforecasted(&self, tx: &mut Transaction, pair: &str) -> MyResult<Vec<RateForForecast>> {
+    fn select_rates_for_forecast_unforecasted(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+    ) -> MyResult<Vec<RateForForecast>> {
         let q = format!(
             r#"
                 WITH forecasted AS (
@@ -340,19 +449,19 @@ impl Client for DefaultClient
                 WHERE
                     f.pair = :pair AND forecasted.rate_id IS NULL
             "#,
-            TABLE_NAME_FORECAST_RESULT,
-            TABLE_NAME_RATE_FOR_FORECAST,
+            TABLE_NAME_FORECAST_RESULT, TABLE_NAME_RATE_FOR_FORECAST,
         );
         let p = params! {
             "pair" => pair,
         };
         log::debug!("query: {}, pair: {}", q, pair);
 
-        let mut rates:Vec<RateForForecast> = vec![];
+        let mut rates: Vec<RateForForecast> = vec![];
         let mut result = tx.exec_iter(q, p)?;
         while let Some(result_set) = result.next_set() {
             for row in result_set? {
-                let (id, pair, histories_raw, expire, memo, created_at, updated_at) = from_row(row?);
+                let (id, pair, histories_raw, expire, memo, created_at, updated_at) =
+                    from_row(row?);
                 let Deserialized(histories): Deserialized<Vec<f64>> = from_value(histories_raw);
                 let record = RateForForecast {
                     id,
@@ -369,7 +478,11 @@ impl Client for DefaultClient
         Ok(rates)
     }
 
-    fn insert_forecast_results(&self, tx: &mut Transaction, results: &Vec<ForecastResult>) -> MyResult<()> {
+    fn insert_forecast_results(
+        &self,
+        tx: &mut Transaction,
+        results: &Vec<ForecastResult>,
+    ) -> MyResult<()> {
         tx.exec_batch(
             format!(
                 "INSERT INTO {} (rate_id, model_no, forecast_type, result, memo) VALUES (:rate_id, :model_no, :forecast_type, :result, :memo);",

@@ -1,7 +1,11 @@
 extern crate common_lib;
 
-use chrono::{Utc, Duration};
-use common_lib::{mysql::{self, client::Client}, error::MyResult, batch};
+use chrono::{Duration, Utc};
+use common_lib::{
+    batch,
+    error::MyResult,
+    mysql::{self, client::Client},
+};
 use config::Config;
 use log::{error, info};
 
@@ -44,17 +48,26 @@ fn main() {
 }
 
 fn run(config: &Config, mysql_cli: &mysql::client::DefaultClient) {
-    info!("start DataCleanBatch, expire_date:{}", config.expire_date_count);
+    info!(
+        "start DataCleanBatch, expire_date:{}",
+        config.expire_date_count
+    );
 
     let border = (Utc::now() - Duration::days(config.expire_date_count)).naive_utc();
     match mysql_cli.with_transaction(|tx| -> MyResult<()> {
         mysql_cli.delete_old_rates_for_training(tx, &border)
     }) {
         Ok(_) => {
-            info!("successful cleaning table 'rate_for_training', border:{}", border);
+            info!(
+                "successful cleaning table 'rate_for_training', border:{}",
+                border
+            );
         }
         Err(err) => {
-            error!("failed to clean table 'rate_for_training', border:{}, error: {}", border, err);
+            error!(
+                "failed to clean table 'rate_for_training', border:{}, error: {}",
+                border, err
+            );
         }
     };
 }

@@ -16,12 +16,8 @@ pub enum MyError {
     },
 
     #[error("unknown model type, value:{}", value)]
-    UnknownModelType {
-        value: u8,
-    },
+    UnknownModelType { value: u8 },
 
     #[error("unsupported model type enum, value:{}", value)]
-    UnsupportedModelTypeEnum {
-        value: String,
-    }
+    UnsupportedModelTypeEnum { value: String },
 }

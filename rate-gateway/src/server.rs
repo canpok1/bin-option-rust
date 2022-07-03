@@ -1,15 +1,15 @@
+use async_trait::async_trait;
+use common_lib::{
+    domain,
+    error::MyResult,
+    mysql::{self, client::Client},
+};
+use log::info;
 use rate_gateway_lib::{
     models::{self, PostSuccess},
     server::MakeService,
     Api, RatesPairPostResponse,
 };
-use async_trait::async_trait;
-use common_lib::{
-    mysql::{self, client::Client},
-    error::MyResult,
-    domain
-};
-use log::info;
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
 
 pub async fn run(addr: &str, mysql_cli: mysql::client::DefaultClient) {
@@ -74,21 +74,15 @@ where
         }
         let rates = rates.unwrap();
 
-        match self.mysql_cli.with_transaction(
-            |tx| -> MyResult<()> {
-                self.mysql_cli.insert_rates_for_training(tx, &rates)
-            }
-        ) {
-            Ok(_) => {
-                Ok(RatesPairPostResponse::Status201(PostSuccess {
-                    count: rates.len() as i64,
-                }))
-            }
-            Err(err) => {
-                Ok(RatesPairPostResponse::Status500(models::Error {
-                    message: format!("internal server error, {}", err),
-                }))
-            }
+        match self.mysql_cli.with_transaction(|tx| -> MyResult<()> {
+            self.mysql_cli.insert_rates_for_training(tx, &rates)
+        }) {
+            Ok(_) => Ok(RatesPairPostResponse::Status201(PostSuccess {
+                count: rates.len() as i64,
+            })),
+            Err(err) => Ok(RatesPairPostResponse::Status500(models::Error {
+                message: format!("internal server error, {}", err),
+            })),
         }
     }
 }

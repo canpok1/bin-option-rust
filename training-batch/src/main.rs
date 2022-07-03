@@ -1,20 +1,32 @@
-use chrono::{Duration, Utc, NaiveDateTime};
+use chrono::{Duration, NaiveDateTime, Utc};
 use common_lib::{
-    error::MyResult,
-    mysql::{self, client::{DefaultClient, Client}},
-    domain::model::ForecastModel,
     batch,
+    domain::model::ForecastModel,
+    error::MyResult,
+    mysql::{
+        self,
+        client::{Client, DefaultClient},
+    },
 };
-use log::{error, info, warn, debug};
+use log::{debug, error, info, warn};
 use smartcore::{
-    linalg::naive::dense_matrix::DenseMatrix,
-    model_selection::train_test_split,
     ensemble::random_forest_regressor::*,
-    metrics::mean_squared_error,
-    neighbors::knn_regressor::{KNNRegressor, KNNRegressorParameters},
+    linalg::naive::dense_matrix::DenseMatrix,
+    linear::{
+        elastic_net::{ElasticNet, ElasticNetParameters},
+        lasso::{Lasso, LassoParameters},
+        linear_regression::LinearRegression,
+        logistic_regression::LogisticRegression,
+        ridge_regression::{RidgeRegression, RidgeRegressionParameters},
+    },
     math::distance::Distances,
-    linear::{linear_regression::LinearRegression, ridge_regression::{RidgeRegression, RidgeRegressionParameters}, lasso::{LassoParameters, Lasso}, elastic_net::{ElasticNet, ElasticNetParameters}, logistic_regression::LogisticRegression},
-    svm::{svr::{SVRParameters, SVR}, Kernels},
+    metrics::mean_squared_error,
+    model_selection::train_test_split,
+    neighbors::knn_regressor::{KNNRegressor, KNNRegressorParameters},
+    svm::{
+        svr::{SVRParameters, SVR},
+        Kernels,
+    },
 };
 
 mod config;
@@ -69,13 +81,16 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
 
     let (org_x, org_y) = load_data(config, mysql_cli, begin, end)?;
     if org_x.len() < config.training_data_required_count {
-        warn!("training data is too little. skip training. count:{}", org_x.len());
+        warn!(
+            "training data is too little. skip training. count:{}",
+            org_x.len()
+        );
         return Ok(());
     }
     let matrix = DenseMatrix::from_2d_vec(&org_x);
     let (train_base_x, test_x, train_base_y, test_y) = train_test_split(&matrix, &org_y, 0.2, true);
 
-    let mut models:Vec<ForecastModel> = vec![];
+    let mut models: Vec<ForecastModel> = vec![];
     if let Some(m) = load_existing_model(config, mysql_cli)? {
         models.push(m);
     }
@@ -96,7 +111,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         let r = KNNRegressor::fit(
             &train_x,
             &train_y,
-            KNNRegressorParameters::default().with_distance(Distances::euclidian())
+            KNNRegressorParameters::default().with_distance(Distances::euclidian()),
         )?;
         let m = ForecastModel::KNN {
             pair: config.currency_pair.clone(),
@@ -109,11 +124,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
     for index in 1..=config.training_count {
         debug!("training Linear {:2} ...", index);
         let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-        let r = LinearRegression::fit(
-            &train_x,
-            &train_y,
-            Default::default(),
-        )?;
+        let r = LinearRegression::fit(&train_x, &train_y, Default::default())?;
         let m = ForecastModel::Linear {
             pair: config.currency_pair.clone(),
             no: config.forecast_model_no,
@@ -160,7 +171,9 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         let r = ElasticNet::fit(
             &train_x,
             &train_y,
-            ElasticNetParameters::default().with_alpha(0.5).with_l1_ratio(0.5),
+            ElasticNetParameters::default()
+                .with_alpha(0.5)
+                .with_l1_ratio(0.5),
         )?;
         let m = ForecastModel::ElasticNet {
             pair: config.currency_pair.clone(),
@@ -193,7 +206,10 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         let r = SVR::fit(
             &train_x,
             &train_y,
-            SVRParameters::default().with_kernel(Kernels::rbf(0.5)).with_c(2000.0).with_eps(10.0),
+            SVRParameters::default()
+                .with_kernel(Kernels::rbf(0.5))
+                .with_c(2000.0)
+                .with_eps(10.0),
         )?;
         let m = ForecastModel::SVR {
             pair: config.currency_pair.clone(),
@@ -204,8 +220,8 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         models.push(m);
     }
 
-    let mut best_model:Option<&ForecastModel> = None;
-    let mut best_mne:Option<f64> = None;
+    let mut best_model: Option<&ForecastModel> = None;
+    let mut best_mne: Option<f64> = None;
     for m in models.iter() {
         let y = m.predict_for_training(&test_x)?;
 
@@ -231,7 +247,13 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         let want = test_y[row];
         let got = y[row];
         let diff = want - got;
-        info!("[no{:03}] want: {:.4}, got: {:.4}, diff: {:.4}", row+1, want, got, diff);
+        info!(
+            "[no{:03}] want: {:.4}, got: {:.4}, diff: {:.4}",
+            row + 1,
+            want,
+            got,
+            diff
+        );
     }
 
     save_model(mysql_cli, &best_model)?;
@@ -239,25 +261,36 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
     Ok(())
 }
 
-fn load_data(config: &config::Config, mysql_cli: &DefaultClient, begin: NaiveDateTime, end: NaiveDateTime) -> MyResult<(Vec<Vec<f64>>, Vec<f64>)> {
-    let mut x:Vec<Vec<f64>> = vec![];
-    let mut y:Vec<f64> = vec![];
+fn load_data(
+    config: &config::Config,
+    mysql_cli: &DefaultClient,
+    begin: NaiveDateTime,
+    end: NaiveDateTime,
+) -> MyResult<(Vec<Vec<f64>>, Vec<f64>)> {
+    let mut x: Vec<Vec<f64>> = vec![];
+    let mut y: Vec<f64> = vec![];
 
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
         debug!("fetch rates. begin:{}, end:{}", begin, end);
 
-        let rates = mysql_cli.select_rates_for_training(tx, &config.currency_pair, Some(begin), Some(end))?;
+        let rates = mysql_cli.select_rates_for_training(
+            tx,
+            &config.currency_pair,
+            Some(begin),
+            Some(end),
+        )?;
         debug!("fetched rates count: {}", rates.len());
 
         for offset in 0..rates.len() {
-            let truth = rates.get(offset + config.forecast_input_size - 1 + config.forecast_offset_minutes);
+            let truth =
+                rates.get(offset + config.forecast_input_size - 1 + config.forecast_offset_minutes);
             if truth.is_none() {
                 break;
             }
             y.push(truth.unwrap().rate);
 
-            let mut data:Vec<f64> = vec![];
-            for index in offset..offset+config.forecast_input_size {
+            let mut data: Vec<f64> = vec![];
+            for index in offset..offset + config.forecast_input_size {
                 data.push(rates[index].rate.clone());
             }
             x.push(data);
@@ -268,15 +301,17 @@ fn load_data(config: &config::Config, mysql_cli: &DefaultClient, begin: NaiveDat
     Ok((x, y))
 }
 
-fn load_existing_model(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<Option<ForecastModel>> {
-    let mut model:Option<ForecastModel> = None;
+fn load_existing_model(
+    config: &config::Config,
+    mysql_cli: &DefaultClient,
+) -> MyResult<Option<ForecastModel>> {
+    let mut model: Option<ForecastModel> = None;
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
         model = mysql_cli.select_forecast_model(tx, &config.currency_pair, 0)?;
         Ok(())
     })?;
     Ok(model)
 }
-
 
 fn save_model(mysql_cli: &DefaultClient, model: &ForecastModel) -> MyResult<()> {
     mysql_cli.with_transaction(|tx| {
