@@ -61,12 +61,22 @@ pub trait Client {
         tx: &mut Transaction,
         pair: &str,
     ) -> MyResult<Vec<RateForForecast>>;
+    fn select_rates_for_forecast_by_id(
+        &self,
+        tx: &mut Transaction,
+        id: &str,
+    ) -> MyResult<Option<RateForForecast>>;
 
     fn insert_forecast_results(
         &self,
         tx: &mut Transaction,
         results: &Vec<ForecastResult>,
     ) -> MyResult<()>;
+    fn select_forecast_results_by_rate_id(
+        &self,
+        tx: &mut Transaction,
+        rate_id: &str,
+    ) -> MyResult<Option<ForecastResult>>;
 }
 
 #[derive(Clone, Debug)]
@@ -512,6 +522,43 @@ impl Client for DefaultClient {
         Ok(rates)
     }
 
+    fn select_rates_for_forecast_by_id(
+        &self,
+        tx: &mut Transaction,
+        id: &str,
+    ) -> MyResult<Option<RateForForecast>> {
+        let q = format!(
+            r#"
+                SELECT id, pair, histories, expire, memo, created_at, updated_at
+                FROM {}
+                WHERE id = :id AND expire >= CURRENT_TIMESTAMP();
+            "#,
+            TABLE_NAME_RATE_FOR_FORECAST,
+        );
+        let p = params! {
+            "id" => id,
+        };
+        log::debug!("query: {}, id: {}", q, id);
+
+        if let Some((id, pair, histories_raw, expire, memo, created_at, updated_at)) =
+            tx.exec_first(q, p)?
+        {
+            let Deserialized(histories) = from_value(histories_raw);
+            let record = RateForForecast {
+                id,
+                pair,
+                histories: histories,
+                expire,
+                memo,
+                created_at,
+                updated_at,
+            };
+            Ok(Some(record))
+        } else {
+            Ok(None)
+        }
+    }
+
     fn insert_forecast_results(
         &self,
         tx: &mut Transaction,
@@ -534,5 +581,42 @@ impl Client for DefaultClient {
         )?;
 
         Ok(())
+    }
+
+    fn select_forecast_results_by_rate_id(
+        &self,
+        tx: &mut Transaction,
+        rate_id: &str,
+    ) -> MyResult<Option<ForecastResult>> {
+        let q = format!(
+            r#"
+                SELECT id, rate_id, model_no, forecast_type, result, memo, created_at, updated_at
+                FROM {}
+                WHERE rate_id = :rate_id;
+            "#,
+            TABLE_NAME_FORECAST_RESULT,
+        );
+        let p = params! {
+            "rate_id" => rate_id,
+        };
+        log::debug!("query: {}, rate_id: {}", q, rate_id);
+
+        if let Some((id, rate_id, model_no, forecast_type, result, memo, created_at, updated_at)) =
+            tx.exec_first(q, p)?
+        {
+            let record = ForecastResult {
+                id,
+                rate_id,
+                model_no,
+                forecast_type,
+                result,
+                memo,
+                created_at,
+                updated_at,
+            };
+            Ok(Some(record))
+        } else {
+            Ok(None)
+        }
     }
 }

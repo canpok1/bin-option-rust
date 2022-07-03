@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use common_lib::{
-    domain::model::RateForForecast,
+    domain::model::{ForecastResult, RateForForecast},
     mysql::{self, client::Client},
 };
 use forecast_server_lib::{
@@ -9,7 +9,7 @@ use forecast_server_lib::{
     server::MakeService,
     Api, ForecastAfter5minRateIdGetResponse, RatesPostResponse,
 };
-use log::info;
+use log::{info, warn};
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
 
 use crate::config;
@@ -64,7 +64,71 @@ where
             rate_id,
             context.get().0.clone()
         );
-        Err(ApiError("Generic failure".into()))
+
+        let mut rate: Option<RateForForecast> = None;
+        let mut forecast: Option<ForecastResult> = None;
+        match self.mysql_cli.with_transaction(|tx| {
+            rate = self
+                .mysql_cli
+                .select_rates_for_forecast_by_id(tx, &rate_id)?;
+            if rate.is_none() {
+                return Ok(());
+            }
+
+            forecast = self
+                .mysql_cli
+                .select_forecast_results_by_rate_id(tx, &rate_id)?;
+
+            Ok(())
+        }) {
+            Ok(_) => {
+                if rate.is_none() {
+                    let error = models::Error {
+                        message: format!("rate is not found, rate_id: {}", rate_id),
+                    };
+                    warn!(
+                        "error: {:?}, X-Span-ID: {:?}",
+                        error,
+                        context.get().0.clone()
+                    );
+
+                    return Ok(ForecastAfter5minRateIdGetResponse::Status404(error));
+                }
+                let result = if let Some(forecast) = forecast {
+                    models::ForecastResult {
+                        complete: true,
+                        rate: Some(forecast.result),
+                    }
+                } else {
+                    models::ForecastResult {
+                        complete: false,
+                        rate: None,
+                    }
+                };
+                info!(
+                    "result: {:?}, X-Span-ID: {:?}",
+                    result,
+                    context.get().0.clone()
+                );
+
+                Ok(ForecastAfter5minRateIdGetResponse::Status200(
+                    models::ForecastAfter5minRateIdGet200Response {
+                        result: Some(result),
+                    },
+                ))
+            }
+            Err(err) => {
+                let error = models::Error {
+                    message: format!("internal server error, {}", err),
+                };
+                warn!(
+                    "error: {:?}, X-Span-ID: {:?}",
+                    error,
+                    context.get().0.clone()
+                );
+                Ok(ForecastAfter5minRateIdGetResponse::Status500(error))
+            }
+        }
     }
 
     /// レート履歴を新規登録します
