@@ -48,6 +48,7 @@ node local {
 }
 
 histories <-- ForecastServer
+models --> ForecastServer
 forecast --> ForecastServer
 ForecastServer <--> MT4
 
