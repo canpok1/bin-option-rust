@@ -36,7 +36,7 @@ const FRAGMENT_ENCODE_SET: &AsciiSet = &percent_encoding::CONTROLS
 const ID_ENCODE_SET: &AsciiSet = &FRAGMENT_ENCODE_SET.add(b'|');
 
 use crate::{Api,
-     ForecastAfter5minRateIdModelNoGetResponse,
+     ForecastAfter30minRateIdModelNoGetResponse,
      RatesPostResponse
      };
 
@@ -381,15 +381,15 @@ impl<S, C> Api<C> for Client<S, C> where
         }
     }
 
-    async fn forecast_after5min_rate_id_model_no_get(
+    async fn forecast_after30min_rate_id_model_no_get(
         &self,
         param_rate_id: String,
         param_model_no: i32,
-        context: &C) -> Result<ForecastAfter5minRateIdModelNoGetResponse, ApiError>
+        context: &C) -> Result<ForecastAfter30minRateIdModelNoGetResponse, ApiError>
     {
         let mut client_service = self.client_service.clone();
         let mut uri = format!(
-            "{}/forecast/after5min/{rate_id}/{model_no}",
+            "{}/forecast/after30min/{rate_id}/{model_no}",
             self.base_path
             ,rate_id=utf8_percent_encode(&param_rate_id.to_string(), ID_ENCODE_SET)
             ,model_no=utf8_percent_encode(&param_model_no.to_string(), ID_ENCODE_SET)
@@ -435,10 +435,10 @@ impl<S, C> Api<C> for Client<S, C> where
                         .map_err(|e| ApiError(format!("Failed to read response: {}", e))).await?;
                 let body = str::from_utf8(&body)
                     .map_err(|e| ApiError(format!("Response was not valid UTF8: {}", e)))?;
-                let body = serde_json::from_str::<models::ForecastAfter5minRateIdModelNoGet200Response>(body).map_err(|e| {
+                let body = serde_json::from_str::<models::ForecastAfter30minRateIdModelNoGet200Response>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(ForecastAfter5minRateIdModelNoGetResponse::Status200
+                Ok(ForecastAfter30minRateIdModelNoGetResponse::Status200
                     (body)
                 )
             }
@@ -452,7 +452,7 @@ impl<S, C> Api<C> for Client<S, C> where
                 let body = serde_json::from_str::<models::Error>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(ForecastAfter5minRateIdModelNoGetResponse::Status404
+                Ok(ForecastAfter30minRateIdModelNoGetResponse::Status404
                     (body)
                 )
             }
@@ -466,7 +466,7 @@ impl<S, C> Api<C> for Client<S, C> where
                 let body = serde_json::from_str::<models::Error>(body).map_err(|e| {
                     ApiError(format!("Response body did not match the schema: {}", e))
                 })?;
-                Ok(ForecastAfter5minRateIdModelNoGetResponse::Status500
+                Ok(ForecastAfter30minRateIdModelNoGetResponse::Status500
                     (body)
                 )
             }

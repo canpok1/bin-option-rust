@@ -4,7 +4,7 @@ Cargo.toml
 README.md
 api/openapi.yaml
 docs/Error.md
-docs/ForecastAfter5minRateIdModelNoGet200Response.md
+docs/ForecastAfter30minRateIdModelNoGet200Response.md
 docs/ForecastResult.md
 docs/History.md
 docs/RatesPost201Response.md

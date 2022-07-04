@@ -5,7 +5,7 @@
 use futures::{future, Stream, stream};
 #[allow(unused_imports)]
 use forecast_server_lib::{Api, ApiNoContext, Client, ContextWrapperExt, models,
-                      ForecastAfter5minRateIdModelNoGetResponse,
+                      ForecastAfter30minRateIdModelNoGetResponse,
                       RatesPostResponse,
                      };
 use clap::{App, Arg};
@@ -28,7 +28,7 @@ fn main() {
         .arg(Arg::with_name("operation")
             .help("Sets the operation to run")
             .possible_values(&[
-                "ForecastAfter5minRateIdModelNoGet",
+                "ForecastAfter30minRateIdModelNoGet",
             ])
             .required(true)
             .index(1))
@@ -72,8 +72,8 @@ fn main() {
     let mut rt = tokio::runtime::Runtime::new().unwrap();
 
     match matches.value_of("operation") {
-        Some("ForecastAfter5minRateIdModelNoGet") => {
-            let result = rt.block_on(client.forecast_after5min_rate_id_model_no_get(
+        Some("ForecastAfter30minRateIdModelNoGet") => {
+            let result = rt.block_on(client.forecast_after30min_rate_id_model_no_get(
                   "rate_id_example".to_string(),
                   56
             ));

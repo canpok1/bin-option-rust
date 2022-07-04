@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost:8082*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-****](rates_api.md#) | **GET** /forecast/after5min/{rateId}/{modelNo} | 5分後の予想を取得します
+****](rates_api.md#) | **GET** /forecast/after30min/{rateId}/{modelNo} | 30分後の予想を取得します
 ****](rates_api.md#) | **POST** /rates | レート履歴を新規登録します
 
 
 # ****
-> models::ForecastAfter5minRateIdModelNoGet200Response (rate_id, model_no)
-5分後の予想を取得します
+> models::ForecastAfter30minRateIdModelNoGet200Response (rate_id, model_no)
+30分後の予想を取得します
 
 ### Required Parameters
 
@@ -21,7 +21,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**models::ForecastAfter5minRateIdModelNoGet200Response**](_forecast_after5min__rateId___modelNo__get_200_response.md)
+[**models::ForecastAfter30minRateIdModelNoGet200Response**](_forecast_after30min__rateId___modelNo__get_200_response.md)
 
 ### Authorization
 

@@ -55,9 +55,9 @@ paths:
                 $ref: "#/components/schemas/Error"
       tags:
         - rates
-  /forecast/after5min/{rateId}/{modelNo}:
+  /forecast/after30min/{rateId}/{modelNo}:
     get:
-      summary: 5分後の予想を取得します
+      summary: 30分後の予想を取得します
       parameters:
         - name: rateId
           in: path

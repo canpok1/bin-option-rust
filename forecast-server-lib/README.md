@@ -14,7 +14,7 @@ To see how to make this your own, look here:
 [README]((https://openapi-generator.tech))
 
 - API version: 1.0.0
-- Build date: 2022-07-03T07:49:50.388022Z[Etc/UTC]
+- Build date: 2022-07-04T14:57:43.299695Z[Etc/UTC]
 
 
 
@@ -61,7 +61,7 @@ cargo run --example server
 To run a client, follow one of the following simple steps:
 
 ```
-cargo run --example client ForecastAfter5minRateIdModelNoGet
+cargo run --example client ForecastAfter30minRateIdModelNoGet
 ```
 
 ### HTTPS
@@ -95,14 +95,14 @@ All URIs are relative to *http://localhost:8082*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[****](docs/rates_api.md#) | **GET** /forecast/after5min/{rateId}/{modelNo} | 5分後の予想を取得します
+[****](docs/rates_api.md#) | **GET** /forecast/after30min/{rateId}/{modelNo} | 30分後の予想を取得します
 [****](docs/rates_api.md#) | **POST** /rates | レート履歴を新規登録します
 
 
 ## Documentation For Models
 
  - [Error](docs/Error.md)
- - [ForecastAfter5minRateIdModelNoGet200Response](docs/ForecastAfter5minRateIdModelNoGet200Response.md)
+ - [ForecastAfter30minRateIdModelNoGet200Response](docs/ForecastAfter30minRateIdModelNoGet200Response.md)
  - [ForecastResult](docs/ForecastResult.md)
  - [History](docs/History.md)
  - [RatesPost201Response](docs/RatesPost201Response.md)

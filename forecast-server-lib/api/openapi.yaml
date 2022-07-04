@@ -46,7 +46,7 @@ paths:
       summary: レート履歴を新規登録します
       tags:
       - rates
-  /forecast/after5min/{rateId}/{modelNo}:
+  /forecast/after30min/{rateId}/{modelNo}:
     get:
       parameters:
       - description: レート履歴ID
@@ -71,7 +71,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/_forecast_after5min__rateId___modelNo__get_200_response'
+                $ref: '#/components/schemas/_forecast_after30min__rateId___modelNo__get_200_response'
           description: 取得成功
         "404":
           content:
@@ -85,7 +85,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: 取得失敗（内部エラー）
-      summary: 5分後の予想を取得します
+      summary: 30分後の予想を取得します
       tags:
       - rates
 components:
@@ -155,7 +155,7 @@ components:
       - expire
       - rateId
       type: object
-    _forecast_after5min__rateId___modelNo__get_200_response:
+    _forecast_after30min__rateId___modelNo__get_200_response:
       description: 成功時の情報
       example:
         result:

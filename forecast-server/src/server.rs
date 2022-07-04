@@ -7,7 +7,7 @@ use common_lib::{
 use forecast_server_lib::{
     models::{self, RatesPost201Response},
     server::MakeService,
-    Api, ForecastAfter5minRateIdModelNoGetResponse, RatesPostResponse,
+    Api, ForecastAfter30minRateIdModelNoGetResponse, RatesPostResponse,
 };
 use log::{info, warn};
 use swagger::{auth::MakeAllowAllAuthenticator, ApiError, EmptyContext, Has, XSpanIdString};
@@ -52,16 +52,16 @@ impl<C> Api<C> for Server
 where
     C: Has<XSpanIdString> + Send + Sync,
 {
-    /// 5分後の予想を取得します
-    async fn forecast_after5min_rate_id_model_no_get(
+    /// 30分後の予想を取得します
+    async fn forecast_after30min_rate_id_model_no_get(
         &self,
         rate_id: String,
         model_no: i32,
         context: &C,
-    ) -> Result<ForecastAfter5minRateIdModelNoGetResponse, ApiError> {
+    ) -> Result<ForecastAfter30minRateIdModelNoGetResponse, ApiError> {
         let context = context.clone();
         info!(
-            "forecast_after5min_rate_id_model_no_get(\"{}\", {}) - X-Span-ID: {:?}",
+            "forecast_after30min_rate_id_model_no_get(\"{}\", {}) - X-Span-ID: {:?}",
             rate_id,
             model_no,
             context.get().0.clone()
@@ -101,7 +101,7 @@ where
                         context.get().0.clone()
                     );
 
-                    return Ok(ForecastAfter5minRateIdModelNoGetResponse::Status404(error));
+                    return Ok(ForecastAfter30minRateIdModelNoGetResponse::Status404(error));
                 }
                 if model.is_none() {
                     let error = models::Error {
@@ -113,7 +113,7 @@ where
                         context.get().0.clone()
                     );
 
-                    return Ok(ForecastAfter5minRateIdModelNoGetResponse::Status404(error));
+                    return Ok(ForecastAfter30minRateIdModelNoGetResponse::Status404(error));
                 }
 
                 let result = if let Some(forecast) = forecast {
@@ -133,8 +133,8 @@ where
                     context.get().0.clone()
                 );
 
-                Ok(ForecastAfter5minRateIdModelNoGetResponse::Status200(
-                    models::ForecastAfter5minRateIdModelNoGet200Response {
+                Ok(ForecastAfter30minRateIdModelNoGetResponse::Status200(
+                    models::ForecastAfter30minRateIdModelNoGet200Response {
                         result: Some(result),
                     },
                 ))
@@ -148,7 +148,7 @@ where
                     error,
                     context.get().0.clone()
                 );
-                Ok(ForecastAfter5minRateIdModelNoGetResponse::Status500(error))
+                Ok(ForecastAfter30minRateIdModelNoGetResponse::Status500(error))
             }
         }
     }

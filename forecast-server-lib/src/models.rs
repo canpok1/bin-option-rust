@@ -121,25 +121,25 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 /// 成功時の情報
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct ForecastAfter5minRateIdModelNoGet200Response {
+pub struct ForecastAfter30minRateIdModelNoGet200Response {
     #[serde(rename = "result")]
     #[serde(skip_serializing_if="Option::is_none")]
     pub result: Option<models::ForecastResult>,
 
 }
 
-impl ForecastAfter5minRateIdModelNoGet200Response {
-    pub fn new() -> ForecastAfter5minRateIdModelNoGet200Response {
-        ForecastAfter5minRateIdModelNoGet200Response {
+impl ForecastAfter30minRateIdModelNoGet200Response {
+    pub fn new() -> ForecastAfter30minRateIdModelNoGet200Response {
+        ForecastAfter30minRateIdModelNoGet200Response {
             result: None,
         }
     }
 }
 
-/// Converts the ForecastAfter5minRateIdModelNoGet200Response value to the Query Parameters representation (style=form, explode=false)
+/// Converts the ForecastAfter30minRateIdModelNoGet200Response value to the Query Parameters representation (style=form, explode=false)
 /// specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde serializer
-impl std::string::ToString for ForecastAfter5minRateIdModelNoGet200Response {
+impl std::string::ToString for ForecastAfter30minRateIdModelNoGet200Response {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
         // Skipping result in query parameter serialization
@@ -148,10 +148,10 @@ impl std::string::ToString for ForecastAfter5minRateIdModelNoGet200Response {
     }
 }
 
-/// Converts Query Parameters representation (style=form, explode=false) to a ForecastAfter5minRateIdModelNoGet200Response value
+/// Converts Query Parameters representation (style=form, explode=false) to a ForecastAfter30minRateIdModelNoGet200Response value
 /// as specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde deserializer
-impl std::str::FromStr for ForecastAfter5minRateIdModelNoGet200Response {
+impl std::str::FromStr for ForecastAfter30minRateIdModelNoGet200Response {
     type Err = String;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
@@ -170,13 +170,13 @@ impl std::str::FromStr for ForecastAfter5minRateIdModelNoGet200Response {
         while key_result.is_some() {
             let val = match string_iter.next() {
                 Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing ForecastAfter5minRateIdModelNoGet200Response".to_string())
+                None => return std::result::Result::Err("Missing value while parsing ForecastAfter30minRateIdModelNoGet200Response".to_string())
             };
 
             if let Some(key) = key_result {
                 match key {
                     "result" => intermediate_rep.result.push(<models::ForecastResult as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing ForecastAfter5minRateIdModelNoGet200Response".to_string())
+                    _ => return std::result::Result::Err("Unexpected key while parsing ForecastAfter30minRateIdModelNoGet200Response".to_string())
                 }
             }
 
@@ -185,40 +185,40 @@ impl std::str::FromStr for ForecastAfter5minRateIdModelNoGet200Response {
         }
 
         // Use the intermediate representation to return the struct
-        std::result::Result::Ok(ForecastAfter5minRateIdModelNoGet200Response {
+        std::result::Result::Ok(ForecastAfter30minRateIdModelNoGet200Response {
             result: intermediate_rep.result.into_iter().next(),
         })
     }
 }
 
-// Methods for converting between header::IntoHeaderValue<ForecastAfter5minRateIdModelNoGet200Response> and hyper::header::HeaderValue
+// Methods for converting between header::IntoHeaderValue<ForecastAfter30minRateIdModelNoGet200Response> and hyper::header::HeaderValue
 
 #[cfg(any(feature = "client", feature = "server"))]
-impl std::convert::TryFrom<header::IntoHeaderValue<ForecastAfter5minRateIdModelNoGet200Response>> for hyper::header::HeaderValue {
+impl std::convert::TryFrom<header::IntoHeaderValue<ForecastAfter30minRateIdModelNoGet200Response>> for hyper::header::HeaderValue {
     type Error = String;
 
-    fn try_from(hdr_value: header::IntoHeaderValue<ForecastAfter5minRateIdModelNoGet200Response>) -> std::result::Result<Self, Self::Error> {
+    fn try_from(hdr_value: header::IntoHeaderValue<ForecastAfter30minRateIdModelNoGet200Response>) -> std::result::Result<Self, Self::Error> {
         let hdr_value = hdr_value.to_string();
         match hyper::header::HeaderValue::from_str(&hdr_value) {
              std::result::Result::Ok(value) => std::result::Result::Ok(value),
              std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for ForecastAfter5minRateIdModelNoGet200Response - value: {} is invalid {}",
+                 format!("Invalid header value for ForecastAfter30minRateIdModelNoGet200Response - value: {} is invalid {}",
                      hdr_value, e))
         }
     }
 }
 
 #[cfg(any(feature = "client", feature = "server"))]
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ForecastAfter5minRateIdModelNoGet200Response> {
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ForecastAfter30minRateIdModelNoGet200Response> {
     type Error = String;
 
     fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
         match hdr_value.to_str() {
              std::result::Result::Ok(value) => {
-                    match <ForecastAfter5minRateIdModelNoGet200Response as std::str::FromStr>::from_str(value) {
+                    match <ForecastAfter30minRateIdModelNoGet200Response as std::str::FromStr>::from_str(value) {
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into ForecastAfter5minRateIdModelNoGet200Response - {}",
+                            format!("Unable to convert header value '{}' into ForecastAfter30minRateIdModelNoGet200Response - {}",
                                 value, err))
                     }
              },
