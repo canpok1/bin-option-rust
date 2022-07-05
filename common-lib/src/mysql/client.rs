@@ -5,7 +5,9 @@ use mysql::{
 };
 
 use crate::{
-    domain::model::{ForecastModel, ForecastResult, RateForForecast, RateForTraining},
+    domain::model::{
+        ForecastModel, ForecastResult, RateForForecast, RateForTraining, TrainingDataset,
+    },
     error::MyResult,
     mysql::model::ForecastModelRecord,
 };
@@ -14,6 +16,7 @@ static TABLE_NAME_RATE_FOR_TRAINING: &str = "rates_for_training";
 static TABLE_NAME_FORECAST_MODEL: &str = "forecast_models";
 static TABLE_NAME_RATE_FOR_FORECAST: &str = "rates_for_forecast";
 static TABLE_NAME_FORECAST_RESULT: &str = "forecast_results";
+static TABLE_NAME_TRAINING_DATASETS: &str = "training_datasets";
 
 pub trait Client {
     fn with_transaction<F>(&self, f: F) -> MyResult<()>
@@ -80,6 +83,13 @@ pub trait Client {
         model_no: i32,
     ) -> MyResult<Option<ForecastResult>>;
     fn delete_forecast_results_expired(&self, tx: &mut Transaction) -> MyResult<()>;
+
+    fn insert_training_datasets(
+        &self,
+        tx: &mut Transaction,
+        datasets: &Vec<TrainingDataset>,
+    ) -> MyResult<()>;
+    fn truncate_training_datasets(&self, tx: &mut Transaction) -> MyResult<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -644,6 +654,36 @@ impl Client for DefaultClient {
             "#,
             TABLE_NAME_FORECAST_RESULT, TABLE_NAME_RATE_FOR_FORECAST
         );
+        tx.query_drop(q)?;
+
+        Ok(())
+    }
+
+    fn insert_training_datasets(
+        &self,
+        tx: &mut Transaction,
+        datasets: &Vec<TrainingDataset>,
+    ) -> MyResult<()> {
+        tx.exec_batch(
+            format!(
+                "INSERT INTO {} (pair, input_data, truth, memo) VALUES (:pair, :input_data, :truth, :memo);",
+                TABLE_NAME_TRAINING_DATASETS
+            ),
+            datasets.iter().map(|dataset| {
+                params! {
+                    "pair" => &dataset.pair,
+                    "input_data" => Serialized(&dataset.input_data),
+                    "truth" => &dataset.truth,
+                    "memo" => &dataset.memo,
+                }
+            }),
+        )?;
+
+        Ok(())
+    }
+
+    fn truncate_training_datasets(&self, tx: &mut Transaction) -> MyResult<()> {
+        let q = format!(" TRUNCATE TABLE {};", TABLE_NAME_TRAINING_DATASETS);
         tx.query_drop(q)?;
 
         Ok(())

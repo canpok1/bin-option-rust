@@ -597,3 +597,24 @@ impl RateForForecast {
         })
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct TrainingDataset {
+    pub id: String,
+    pub pair: String,
+    pub input_data: Vec<f64>,
+    pub truth: f64,
+    pub memo: String,
+}
+
+impl TrainingDataset {
+    pub fn new(pair: String, input_data: Vec<f64>, truth: f64, memo: String) -> MyResult<Self> {
+        Ok(TrainingDataset {
+            id: "".to_string(),
+            pair: pair.to_string(),
+            input_data: input_data,
+            truth: truth,
+            memo: memo,
+        })
+    }
+}

@@ -1,7 +1,7 @@
 use chrono::{Duration, NaiveDateTime, Utc};
 use common_lib::{
     batch,
-    domain::model::ForecastModel,
+    domain::model::{ForecastModel, TrainingDataset},
     error::MyResult,
     mysql::{
         self,
@@ -87,6 +87,9 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         );
         return Ok(());
     }
+
+    save_training_datasets(config, mysql_cli, &org_x, &org_y)?;
+
     let matrix = DenseMatrix::from_2d_vec(&org_x);
     let (train_base_x, test_x, train_base_y, test_y) = train_test_split(&matrix, &org_y, 0.2, true);
 
@@ -302,18 +305,52 @@ fn load_data(
             if truth.is_none() {
                 break;
             }
-            y.push(truth.unwrap().rate);
 
+            let mut before: f64 = 0.0;
+            let mut same_count = 0;
             let mut data: Vec<f64> = vec![];
             for index in offset..offset + config.forecast_input_size {
                 data.push(rates[index].rate.clone());
+                if rates[index].rate == before {
+                    same_count += 1;
+                }
+                before = rates[index].rate.clone();
+            }
+            if same_count > (data.len() / 2) {
+                continue;
+            }
+            // データ数を偶数にしないとLinearの学習でエラーになるようなので偶数になるよう調整
+            if offset == rates.len() && x.len() % 2 == 0 {
+                continue;
             }
             x.push(data);
+            y.push(truth.unwrap().rate);
         }
 
         Ok(())
     })?;
     Ok((x, y))
+}
+
+fn save_training_datasets(
+    config: &config::Config,
+    mysql_cli: &DefaultClient,
+    x: &Vec<Vec<f64>>,
+    y: &Vec<f64>,
+) -> MyResult<()> {
+    let mut datasets: Vec<TrainingDataset> = vec![];
+    for i in 0..x.len() {
+        let dataset = TrainingDataset::new(
+            config.currency_pair.clone(),
+            x[i].clone(),
+            y[i].clone(),
+            "inserted by training-batch".to_string(),
+        )?;
+        datasets.push(dataset);
+    }
+    mysql_cli.with_transaction(|tx| mysql_cli.insert_training_datasets(tx, &datasets))?;
+
+    Ok(())
 }
 
 fn load_existing_model(
