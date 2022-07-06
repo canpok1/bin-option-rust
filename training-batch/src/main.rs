@@ -1,7 +1,10 @@
 use chrono::{Duration, NaiveDateTime, Utc};
 use common_lib::{
     batch,
-    domain::model::{ForecastModel, TrainingDataset},
+    domain::{
+        model::{ForecastModel, TrainingDataset},
+        service::Converter,
+    },
     error::MyResult,
     mysql::{
         self,
@@ -288,6 +291,8 @@ fn load_data(
     let mut x: Vec<Vec<f64>> = vec![];
     let mut y: Vec<f64> = vec![];
 
+    let converter = Converter {};
+
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
         debug!("fetch rates. begin:{}, end:{}", begin, end);
 
@@ -323,7 +328,7 @@ fn load_data(
             if offset == rates.len() && x.len() % 2 == 0 {
                 continue;
             }
-            x.push(data);
+            x.push(converter.convert_to_input_data(&data)?);
             y.push(truth.unwrap().rate);
         }
 

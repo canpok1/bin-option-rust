@@ -2,7 +2,7 @@ extern crate common_lib;
 
 use common_lib::{
     batch,
-    domain::model::ForecastResult,
+    domain::{model::ForecastResult, service::Converter},
     error::MyResult,
     mysql::{
         self,
@@ -58,6 +58,7 @@ fn main() {
 }
 
 fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
+    let converter = Converter {};
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
         let models = mysql_cli.select_forecast_models(tx, &config.currency_pair)?;
         let rates = mysql_cli.select_rates_for_forecast_unforecasted(tx, &config.currency_pair)?;
@@ -88,11 +89,13 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
                     continue;
                 }
 
+                let input_data = converter.convert_to_input_data(&rate.histories)?;
+
                 let result = ForecastResult::new(
                     rate.id.to_string(),
                     model.get_no()?,
                     0,
-                    model.predict(&rate.histories)?,
+                    model.predict(&input_data)?,
                     "after5min".to_string(),
                 )?;
                 info!(
