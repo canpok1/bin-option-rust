@@ -13,6 +13,7 @@ job_scheduler = "*"
 log = "0.4.0"
 mysql = "20.1"
 serde = { version = "1.0", features = ["derive"] }
+sha2 = "0.10"
 smartcore = { version = "0.2.0", features = ["serde"] }
-thiserror = "1.0"
 ta = "0.5"
+thiserror = "1.0"

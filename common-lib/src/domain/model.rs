@@ -1,6 +1,8 @@
 use std::fmt;
 
 use chrono::{NaiveDate, NaiveDateTime};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use smartcore::{
     ensemble::random_forest_regressor::RandomForestRegressor,
     linalg::naive::dense_matrix::DenseMatrix,
@@ -49,7 +51,7 @@ impl RateForTraining {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FeatureParams {
     pub feature_size: usize,
     pub fast_period: usize,
@@ -65,6 +67,16 @@ impl FeatureParams {
             slow_period: 6,
             signal_period: 4,
         }
+    }
+
+    pub fn to_hash(&self) -> MyResult<String> {
+        let s = format!("{:?}", self);
+
+        let mut hasher = Sha256::new();
+        hasher.update(s.as_bytes());
+        let hash = hasher.finalize();
+
+        Ok(format!("{:02x}", hash))
     }
 }
 

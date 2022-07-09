@@ -1,4 +1,4 @@
-use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 use smartcore::{
     ensemble::random_forest_regressor::RandomForestRegressor,
     linalg::naive::dense_matrix::DenseMatrix,
@@ -12,7 +12,7 @@ use smartcore::{
 };
 
 use crate::{
-    domain,
+    domain::{self, model::FeatureParams},
     error::{MyError, MyResult},
 };
 
@@ -32,31 +32,22 @@ pub struct ForecastModelRecord {
     pub model_type: u8,
     pub model_data: Vec<u8>,
     pub input_data_size: usize,
+    pub feature_params: FeatureParams,
+    pub feature_params_hash: String,
     pub memo: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
 impl ForecastModelRecord {
-    pub fn new(
-        pair: String,
-        model_no: i32,
-        model_type: u8,
-        model_data: Vec<u8>,
-        input_data_size: usize,
-        memo: String,
-    ) -> MyResult<ForecastModelRecord> {
-        let dummy = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
-        Ok(ForecastModelRecord {
-            pair,
-            model_no,
-            model_type,
-            model_data,
-            input_data_size,
-            memo,
-            created_at: dummy.clone(),
-            updated_at: dummy.clone(),
-        })
+    pub fn validate_feature_params(&self) -> MyResult<()> {
+        if self.feature_params.to_hash()? == self.feature_params_hash {
+            return Ok(());
+        }
+        Err(Box::new(MyError::UnmatchFeatureParamsHash {
+            pair: self.pair.to_string(),
+            model_no: self.model_no,
+        }))
     }
 
     pub fn to_domain(&self) -> MyResult<domain::model::ForecastModel> {
@@ -141,5 +132,34 @@ impl ForecastModelRecord {
                 value: self.model_type,
             })),
         }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct FeatureParamsValue {
+    pub feature_size: Option<usize>,
+    pub fast_period: Option<usize>,
+    pub slow_period: Option<usize>,
+    pub signal_period: Option<usize>,
+}
+
+impl FeatureParamsValue {
+    pub fn to_domain(&self) -> MyResult<domain::model::FeatureParams> {
+        let mut m = FeatureParams::new_default();
+
+        if let Some(v) = self.feature_size {
+            m.feature_size = v;
+        }
+        if let Some(v) = self.fast_period {
+            m.fast_period = v;
+        }
+        if let Some(v) = self.slow_period {
+            m.slow_period = v;
+        }
+        if let Some(v) = self.signal_period {
+            m.signal_period = v;
+        }
+
+        Ok(m)
     }
 }

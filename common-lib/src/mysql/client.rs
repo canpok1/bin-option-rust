@@ -10,7 +10,7 @@ use crate::{
         TrainingDataset,
     },
     error::MyResult,
-    mysql::model::ForecastModelRecord,
+    mysql::model::{FeatureParamsValue, ForecastModelRecord},
 };
 
 static TABLE_NAME_RATE_FOR_TRAINING: &str = "rates_for_training";
@@ -256,7 +256,19 @@ impl Client for DefaultClient {
 
     fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()> {
         let q = format!(
-            "INSERT INTO {} (pair, model_no, model_type, model_data, input_data_size, memo) VALUES (:pair, :no, :type, :data, :input_data_size, :memo) ON DUPLICATE KEY UPDATE model_type = :type, model_data = :data, memo = :memo;",
+            r#"
+                INSERT INTO {}
+                    (pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, memo)
+                VALUES
+                    (:pair, :no, :type, :data, :input_data_size, :feature_params, :feature_params_hash, :memo)
+                ON DUPLICATE KEY UPDATE
+                    model_type = :type,
+                    model_data = :data,
+                    input_data_size = :input_data_size,
+                    feature_params = :feature_params,
+                    feature_params_hash = :feature_params_hash,
+                    memo = :memo;
+            "#,
             TABLE_NAME_FORECAST_MODEL
         );
         let p = match m {
@@ -265,7 +277,7 @@ impl Client for DefaultClient {
                 no,
                 model: _,
                 input_data_size,
-                feature_params: _,
+                feature_params,
                 memo,
             } => {
                 params! {
@@ -274,6 +286,8 @@ impl Client for DefaultClient {
                     "type" => super::model::MODEL_TYPE_RANDOM_FOREST,
                     "data" => m.serialize_model_data()?,
                     "input_data_size" => input_data_size,
+                    "feature_params" => Serialized(feature_params),
+                    "feature_params_hash" => feature_params.to_hash()?,
                     "memo" => memo,
                 }
             }
@@ -282,7 +296,7 @@ impl Client for DefaultClient {
                 no,
                 model: _,
                 input_data_size,
-                feature_params: _,
+                feature_params,
                 memo,
             } => {
                 params! {
@@ -291,6 +305,8 @@ impl Client for DefaultClient {
                     "type" => super::model::MODEL_TYPE_KNN,
                     "data" => m.serialize_model_data()?,
                     "input_data_size" => input_data_size,
+                    "feature_params" => Serialized(feature_params),
+                    "feature_params_hash" => feature_params.to_hash()?,
                     "memo" => memo,
                 }
             }
@@ -299,7 +315,7 @@ impl Client for DefaultClient {
                 no,
                 model: _,
                 input_data_size,
-                feature_params: _,
+                feature_params,
                 memo,
             } => {
                 params! {
@@ -308,6 +324,8 @@ impl Client for DefaultClient {
                     "type" => super::model::MODEL_TYPE_LINEAR,
                     "data" => m.serialize_model_data()?,
                     "input_data_size" => input_data_size,
+                    "feature_params" => Serialized(feature_params),
+                    "feature_params_hash" => feature_params.to_hash()?,
                     "memo" => memo,
                 }
             }
@@ -316,7 +334,7 @@ impl Client for DefaultClient {
                 no,
                 model: _,
                 input_data_size,
-                feature_params: _,
+                feature_params,
                 memo,
             } => {
                 params! {
@@ -325,6 +343,8 @@ impl Client for DefaultClient {
                     "type" => super::model::MODEL_TYPE_RIDGE,
                     "data" => m.serialize_model_data()?,
                     "input_data_size" => input_data_size,
+                    "feature_params" => Serialized(feature_params),
+                    "feature_params_hash" => feature_params.to_hash()?,
                     "memo" => memo,
                 }
             }
@@ -333,7 +353,7 @@ impl Client for DefaultClient {
                 no,
                 model: _,
                 input_data_size,
-                feature_params: _,
+                feature_params,
                 memo,
             } => {
                 params! {
@@ -342,6 +362,8 @@ impl Client for DefaultClient {
                     "type" => super::model::MODEL_TYPE_LASSO,
                     "data" => m.serialize_model_data()?,
                     "input_data_size" => input_data_size,
+                    "feature_params" => Serialized(feature_params),
+                    "feature_params_hash" => feature_params.to_hash()?,
                     "memo" => memo,
                 }
             }
@@ -350,7 +372,7 @@ impl Client for DefaultClient {
                 no,
                 model: _,
                 input_data_size,
-                feature_params: _,
+                feature_params,
                 memo,
             } => {
                 params! {
@@ -359,6 +381,8 @@ impl Client for DefaultClient {
                     "type" => super::model::MODEL_TYPE_ELASTIC_NET,
                     "data" => m.serialize_model_data()?,
                     "input_data_size" => input_data_size,
+                    "feature_params" => Serialized(feature_params),
+                    "feature_params_hash" => feature_params.to_hash()?,
                     "memo" => memo,
                 }
             }
@@ -367,7 +391,7 @@ impl Client for DefaultClient {
                 no,
                 model: _,
                 input_data_size,
-                feature_params: _,
+                feature_params,
                 memo,
             } => {
                 params! {
@@ -376,6 +400,8 @@ impl Client for DefaultClient {
                     "type" => super::model::MODEL_TYPE_LOGISTIC,
                     "data" => m.serialize_model_data()?,
                     "input_data_size" => input_data_size,
+                    "feature_params" => Serialized(feature_params),
+                    "feature_params_hash" => feature_params.to_hash()?,
                     "memo" => memo,
                 }
             }
@@ -384,7 +410,7 @@ impl Client for DefaultClient {
                 no,
                 model: _,
                 input_data_size,
-                feature_params: _,
+                feature_params,
                 memo,
             } => {
                 params! {
@@ -393,6 +419,8 @@ impl Client for DefaultClient {
                     "type" => super::model::MODEL_TYPE_SVR,
                     "data" => m.serialize_model_data()?,
                     "input_data_size" => input_data_size,
+                    "feature_params" => Serialized(feature_params),
+                    "feature_params_hash" => feature_params.to_hash()?,
                     "memo" => memo,
                 }
             }
@@ -411,7 +439,13 @@ impl Client for DefaultClient {
         no: i32,
     ) -> MyResult<Option<ForecastModel>> {
         let q = format!(
-            "SELECT pair, model_no, model_type, model_data, input_data_size, memo, created_at, updated_at FROM {} WHERE pair = :pair AND model_no = :no",
+            r#"
+                SELECT
+                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, memo, created_at, updated_at
+                FROM {}
+                WHERE
+                    pair = :pair AND model_no = :no;
+            "#,
             TABLE_NAME_FORECAST_MODEL
         );
         let p = params! {
@@ -426,21 +460,31 @@ impl Client for DefaultClient {
             model_type,
             model_data,
             input_data_size,
+            feature_params_raw,
+            feature_params_hash,
             memo,
             created_at,
             updated_at,
         )) = tx.exec_first(q, p)?
         {
+            let Deserialized(feature_params_value): Deserialized<FeatureParamsValue> =
+                from_value(feature_params_raw);
             let record = ForecastModelRecord {
                 pair,
                 model_no,
                 model_type,
                 model_data,
                 input_data_size,
+                feature_params: feature_params_value.to_domain()?,
+                feature_params_hash,
                 memo,
                 created_at,
                 updated_at,
             };
+            if let Err(err) = record.validate_feature_params() {
+                log::warn!("model not found, {}", err);
+                return Ok(None);
+            }
             Ok(Some(record.to_domain()?))
         } else {
             Ok(None)
@@ -453,7 +497,13 @@ impl Client for DefaultClient {
         pair: &str,
     ) -> MyResult<Vec<ForecastModel>> {
         let q = format!(
-            "SELECT pair, model_no, model_type, model_data, input_data_size, memo, created_at, updated_at FROM {} WHERE pair = :pair",
+            r#"
+                SELECT
+                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, memo, created_at, updated_at
+                FROM {}
+                WHERE
+                    pair = :pair
+            "#,
             TABLE_NAME_FORECAST_MODEL
         );
         let p = params! {
@@ -471,20 +521,30 @@ impl Client for DefaultClient {
                     model_type,
                     model_data,
                     input_data_size,
+                    feature_params_raw,
+                    feature_params_hash,
                     memo,
                     created_at,
                     updated_at,
                 ) = from_row(row?);
+                let Deserialized(feature_params_value): Deserialized<FeatureParamsValue> =
+                    from_value(feature_params_raw);
                 let record = ForecastModelRecord {
                     pair,
                     model_no,
                     model_type,
                     model_data,
                     input_data_size,
+                    feature_params: feature_params_value.to_domain()?,
+                    feature_params_hash,
                     memo,
                     created_at,
                     updated_at,
                 };
+                if let Err(err) = record.validate_feature_params() {
+                    log::warn!("model not found, {}", err);
+                    continue;
+                }
                 models.push(record.to_domain()?);
             }
         }

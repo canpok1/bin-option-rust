@@ -20,4 +20,7 @@ pub enum MyError {
 
     #[error("unsupported model type enum, value:{}", value)]
     UnsupportedModelTypeEnum { value: String },
+
+    #[error("unmatch feature params hash, pair:{}, model_no:{}", pair, model_no)]
+    UnmatchFeatureParamsHash { pair: String, model_no: i32 },
 }
