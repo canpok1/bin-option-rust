@@ -6,7 +6,8 @@ use mysql::{
 
 use crate::{
     domain::model::{
-        ForecastModel, ForecastResult, RateForForecast, RateForTraining, TrainingDataset,
+        ForecastError, ForecastModel, ForecastResult, RateForForecast, RateForTraining,
+        TrainingDataset,
     },
     error::MyResult,
     mysql::model::ForecastModelRecord,
@@ -16,6 +17,7 @@ static TABLE_NAME_RATE_FOR_TRAINING: &str = "rates_for_training";
 static TABLE_NAME_FORECAST_MODEL: &str = "forecast_models";
 static TABLE_NAME_RATE_FOR_FORECAST: &str = "rates_for_forecast";
 static TABLE_NAME_FORECAST_RESULT: &str = "forecast_results";
+static TABLE_NAME_FORECAST_ERRORS: &str = "forecast_errors";
 static TABLE_NAME_TRAINING_DATASETS: &str = "training_datasets";
 
 pub trait Client {
@@ -83,6 +85,19 @@ pub trait Client {
         model_no: i32,
     ) -> MyResult<Option<ForecastResult>>;
     fn delete_forecast_results_expired(&self, tx: &mut Transaction) -> MyResult<()>;
+
+    fn insert_forecast_errors(
+        &self,
+        tx: &mut Transaction,
+        records: &Vec<ForecastError>,
+    ) -> MyResult<()>;
+    fn select_forecast_errors_by_rate_id_and_model_no(
+        &self,
+        tx: &mut Transaction,
+        rate_id: &str,
+        model_no: i32,
+    ) -> MyResult<Option<ForecastError>>;
+    fn delete_forecast_errors_expired(&self, tx: &mut Transaction) -> MyResult<()>;
 
     fn insert_training_datasets(
         &self,
@@ -661,6 +676,77 @@ impl Client for DefaultClient {
                 );
             "#,
             TABLE_NAME_FORECAST_RESULT, TABLE_NAME_RATE_FOR_FORECAST
+        );
+        tx.query_drop(q)?;
+
+        Ok(())
+    }
+
+    fn insert_forecast_errors(
+        &self,
+        tx: &mut Transaction,
+        records: &Vec<ForecastError>,
+    ) -> MyResult<()> {
+        tx.exec_batch(
+            format!(
+                "INSERT INTO {} (rate_id, model_no, summary, detail) VALUES (:rate_id, :model_no, :summary, :detail);",
+                TABLE_NAME_FORECAST_ERRORS,
+            ),
+            records.iter().map(|record| {
+                params! {
+                    "rate_id" => &record.rate_id,
+                    "model_no" => &record.model_no,
+                    "summary" => &record.summary,
+                    "detail" => &record.detail,
+                }
+            }),
+        )?;
+
+        Ok(())
+    }
+
+    fn select_forecast_errors_by_rate_id_and_model_no(
+        &self,
+        tx: &mut Transaction,
+        rate_id: &str,
+        model_no: i32,
+    ) -> MyResult<Option<ForecastError>> {
+        let q = format!(
+            r#"
+                SELECT id, rate_id, model_no, summary, detail
+                FROM {}
+                WHERE rate_id = :rate_id AND model_no = :model_no;
+            "#,
+            TABLE_NAME_FORECAST_ERRORS,
+        );
+        let p = params! {
+            "rate_id" => rate_id,
+            "model_no" => model_no,
+        };
+        log::debug!("query: {}, rate_id: {}, model_no: {}", q, rate_id, model_no);
+
+        if let Some((id, rate_id, model_no, summary, detail)) = tx.exec_first(q, p)? {
+            let record = ForecastError {
+                id,
+                rate_id,
+                model_no,
+                summary,
+                detail,
+            };
+            Ok(Some(record))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn delete_forecast_errors_expired(&self, tx: &mut Transaction) -> MyResult<()> {
+        let q = format!(
+            r#"
+                DELETE FROM {} WHERE rate_id IN (
+                    SELECT id FROM {} WHERE expire < CURRENT_TIMESTAMP()
+                );
+            "#,
+            TABLE_NAME_FORECAST_ERRORS, TABLE_NAME_RATE_FOR_FORECAST
         );
         tx.query_drop(q)?;
 

@@ -713,6 +713,36 @@ impl ForecastResult {
 }
 
 #[derive(Debug, Clone)]
+pub struct ForecastError {
+    pub id: String,
+    pub rate_id: String,
+    pub model_no: i32,
+    pub summary: String,
+    pub detail: String,
+}
+
+impl ForecastError {
+    pub fn new(rate_id: String, model_no: i32, summary: String, detail: String) -> MyResult<Self> {
+        Ok(ForecastError {
+            id: "".to_string(),
+            rate_id,
+            model_no,
+            summary,
+            detail,
+        })
+    }
+}
+impl fmt::Display for ForecastError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}, {}, rate_id: {}, model_no: {}",
+            self.summary, self.detail, self.rate_id, self.model_no
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct RateForForecast {
     pub id: String,
     pub pair: String,

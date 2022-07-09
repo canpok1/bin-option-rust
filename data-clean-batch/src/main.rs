@@ -64,6 +64,9 @@ fn run(config: &Config, mysql_cli: &mysql::client::DefaultClient) {
         mysql_cli.delete_forecast_results_expired(tx)?;
         info!("successful cleaning table 'forecast_results'");
 
+        mysql_cli.delete_forecast_errors_expired(tx)?;
+        info!("successful cleaning table 'forecast_errors'");
+
         mysql_cli.delete_rates_for_forecast_expired(tx)?;
         info!("successful cleaning table 'rates_for_forecast'");
 

@@ -2,7 +2,10 @@ extern crate common_lib;
 
 use common_lib::{
     batch,
-    domain::{model::ForecastResult, service::Converter},
+    domain::{
+        model::{ForecastError, ForecastResult},
+        service::Converter,
+    },
     error::MyResult,
     mysql::{
         self,
@@ -69,19 +72,40 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
         );
 
         let mut results: Vec<ForecastResult> = vec![];
+        let mut errors: Vec<ForecastError> = vec![];
         for rate in &rates {
             let rate_size = rate.histories.len();
             for model in &models {
-                let input_data_size = model.get_input_data_size()?;
-                if input_data_size != rate_size {
+                let model_no = model.get_no()?;
+                if let Some(e) = mysql_cli
+                    .select_forecast_errors_by_rate_id_and_model_no(tx, &rate.id, model_no)?
+                {
                     warn!(
-                        "input data size is not match, skip model no {}. size(model): {}, size(input data): {}",
-                        model.get_no()?, input_data_size, rate_size
+                        "forecast skipped, error exists. id:{}, rate_id:{}, model_no:{}",
+                        e.id, &rate.id, model_no
                     );
                     continue;
                 }
 
-                let features = converter.convert_to_features(&rate.histories, &model.get_feature_params()?)?;
+                let input_data_size = model.get_input_data_size()?;
+                if input_data_size != rate_size {
+                    let record = ForecastError::new(
+                        rate.id.clone(),
+                        model.get_no()?,
+                        "input data size is not supported".to_string(),
+                        format!(
+                            "size(model): {}, size(input data): {}",
+                            input_data_size, rate_size
+                        ),
+                    )?;
+                    warn!("forecast skipped, {}", record);
+                    errors.push(record);
+
+                    continue;
+                }
+
+                let features =
+                    converter.convert_to_features(&rate.histories, &model.get_feature_params()?)?;
 
                 let result = ForecastResult::new(
                     rate.id.to_string(),
@@ -91,7 +115,7 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
                     "after5min".to_string(),
                 )?;
                 info!(
-                    "pair: {}, model_no: {}, rate_id: {}, result: {}",
+                    "forecast succeeded. pair: {}, model_no: {}, rate_id: {}, result: {}",
                     model.get_pair()?,
                     result.model_no,
                     result.rate_id,
@@ -103,6 +127,7 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
         }
 
         mysql_cli.insert_forecast_results(tx, &results)?;
+        mysql_cli.insert_forecast_errors(tx, &errors)?;
 
         Ok(())
     })

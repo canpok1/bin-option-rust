@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use common_lib::{
-    domain::model::{ForecastModel, ForecastResult, RateForForecast},
+    domain::model::{ForecastError, ForecastModel, ForecastResult, RateForForecast},
     mysql::{self, client::Client},
 };
 use forecast_server_lib::{
@@ -70,7 +70,15 @@ where
         let mut rate: Option<RateForForecast> = None;
         let mut model: Option<ForecastModel> = None;
         let mut forecast: Option<ForecastResult> = None;
+        let mut error: Option<ForecastError> = None;
         match self.mysql_cli.with_transaction(|tx| {
+            error = self
+                .mysql_cli
+                .select_forecast_errors_by_rate_id_and_model_no(tx, &rate_id, model_no)?;
+            if error.is_some() {
+                return Ok(());
+            }
+
             rate = self
                 .mysql_cli
                 .select_rates_for_forecast_by_id(tx, &rate_id)?;
@@ -91,6 +99,13 @@ where
             Ok(())
         }) {
             Ok(_) => {
+                if let Some(e) = error {
+                    let e = models::Error {
+                        message: format!("internal server error, {}", e),
+                    };
+                    warn!("error: {:?}, X-Span-ID: {:?}", e, context.get().0.clone());
+                    return Ok(ForecastAfter30minRateIdModelNoGetResponse::Status500(e));
+                }
                 if rate.is_none() {
                     let error = models::Error {
                         message: format!("rate is not found, rate_id: {}", rate_id),
