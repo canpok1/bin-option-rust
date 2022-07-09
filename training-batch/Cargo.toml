@@ -13,5 +13,6 @@ chrono = "0.4"
 env_logger = "0.8.3"
 envy = "0.4"
 log = "0.4.0"
+rand = "0.8.5"
 serde = { version = "1.0" }
 smartcore = { version = "0.2.0", features = ["serde"] }

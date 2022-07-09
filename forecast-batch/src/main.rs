@@ -2,10 +2,7 @@ extern crate common_lib;
 
 use common_lib::{
     batch,
-    domain::{
-        model::ForecastResult,
-        service::{Converter, Param},
-    },
+    domain::{model::ForecastResult, service::Converter},
     error::MyResult,
     mysql::{
         self,
@@ -83,21 +80,16 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
             }
 
             for model in &models {
-                let input_data_size = model.get_input_data_size()?;
-                if input_data_size != config.forecast_input_size {
+                let params = model.get_params()?;
+                if params.original_data_size != config.forecast_input_size {
                     warn!(
                         "input data size is not match, skip model no {}. size(model): {}, size(batch): {}",
-                        model.get_no()?, input_data_size, config.forecast_input_size
+                        model.get_no()?, params.original_data_size, config.forecast_input_size
                     );
                     continue;
                 }
 
-                let p = Param {
-                    fast_period: 3,
-                    slow_period: 6,
-                    signal_period: 4,
-                };
-                let input_data = converter.convert_to_input_data(&rate.histories, &p)?;
+                let input_data = converter.convert_to_input_data(&rate.histories, &params)?;
 
                 let result = ForecastResult::new(
                     rate.id.to_string(),

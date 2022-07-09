@@ -2,19 +2,16 @@ use ta::{indicators::MovingAverageConvergenceDivergence, Next};
 
 use crate::error::MyResult;
 
+use super::model::ModelParams;
+
 pub struct Converter {}
 
-pub struct Param {
-    pub fast_period: usize,
-    pub slow_period: usize,
-    pub signal_period: usize,
-}
-
 impl Converter {
-    // 入力データの1ブロックサイズ
-    const INPUT_DATA_BLOCK_SIZE: usize = 10;
-
-    pub fn convert_to_input_data(&self, rates_org: &Vec<f64>, p: &Param) -> MyResult<Vec<f64>> {
+    pub fn convert_to_input_data(
+        &self,
+        rates_org: &Vec<f64>,
+        p: &ModelParams,
+    ) -> MyResult<Vec<f64>> {
         let size = rates_org.len();
 
         let mut macd =
@@ -31,7 +28,7 @@ impl Converter {
         let mut histograms = vec![];
         for (i, rate) in rates_org.iter().enumerate() {
             let output = macd.next(*rate);
-            if i >= size - Self::INPUT_DATA_BLOCK_SIZE {
+            if i >= size - p.input_data_block_size {
                 rates.push(*rate);
                 macds.push(output.macd);
                 signals.push(output.signal);

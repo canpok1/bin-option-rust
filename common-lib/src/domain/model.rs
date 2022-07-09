@@ -49,61 +49,82 @@ impl RateForTraining {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ModelParams {
+    pub original_data_size: usize,
+    pub input_data_block_size: usize,
+    pub fast_period: usize,
+    pub slow_period: usize,
+    pub signal_period: usize,
+}
+
+impl ModelParams {
+    pub fn new_default() -> ModelParams {
+        ModelParams {
+            original_data_size: 50,
+            input_data_block_size: 10,
+            fast_period: 3,
+            slow_period: 6,
+            signal_period: 4,
+        }
+    }
+}
+
 pub enum ForecastModel {
     RandomForest {
         pair: String,
         no: i32,
         model: RandomForestRegressor<f64>,
-        input_data_size: usize,
+        params: ModelParams,
         memo: String,
     },
     KNN {
         pair: String,
         no: i32,
         model: KNNRegressor<f64, euclidian::Euclidian>,
-        input_data_size: usize,
+        params: ModelParams,
         memo: String,
     },
     Linear {
         pair: String,
         no: i32,
         model: LinearRegression<f64, DenseMatrix<f64>>,
-        input_data_size: usize,
+        params: ModelParams,
         memo: String,
     },
     Ridge {
         pair: String,
         no: i32,
         model: RidgeRegression<f64, DenseMatrix<f64>>,
-        input_data_size: usize,
+        params: ModelParams,
         memo: String,
     },
     LASSO {
         pair: String,
         no: i32,
         model: Lasso<f64, DenseMatrix<f64>>,
-        input_data_size: usize,
+        params: ModelParams,
         memo: String,
     },
     ElasticNet {
         pair: String,
         no: i32,
         model: ElasticNet<f64, DenseMatrix<f64>>,
-        input_data_size: usize,
+        params: ModelParams,
         memo: String,
     },
     Logistic {
         pair: String,
         no: i32,
         model: LogisticRegression<f64, DenseMatrix<f64>>,
-        input_data_size: usize,
+        params: ModelParams,
         memo: String,
     },
     SVR {
         pair: String,
         no: i32,
         model: SVR<f64, DenseMatrix<f64>, RBFKernel<f64>>,
-        input_data_size: usize,
+        params: ModelParams,
         memo: String,
     },
 }
@@ -115,56 +136,56 @@ impl ForecastModel {
                 pair,
                 no: _,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(pair.to_string()),
             ForecastModel::KNN {
                 pair,
                 no: _,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(pair.to_string()),
             ForecastModel::Linear {
                 pair,
                 no: _,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(pair.to_string()),
             ForecastModel::Ridge {
                 pair,
                 no: _,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(pair.to_string()),
             ForecastModel::LASSO {
                 pair,
                 no: _,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(pair.to_string()),
             ForecastModel::ElasticNet {
                 pair,
                 no: _,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(pair.to_string()),
             ForecastModel::Logistic {
                 pair,
                 no: _,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(pair.to_string()),
             ForecastModel::SVR {
                 pair,
                 no: _,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(pair.to_string()),
         }
@@ -176,119 +197,119 @@ impl ForecastModel {
                 pair: _,
                 no,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(*no),
             ForecastModel::KNN {
                 pair: _,
                 no,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(*no),
             ForecastModel::Linear {
                 pair: _,
                 no,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(*no),
             ForecastModel::Ridge {
                 pair: _,
                 no,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(*no),
             ForecastModel::LASSO {
                 pair: _,
                 no,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(*no),
             ForecastModel::ElasticNet {
                 pair: _,
                 no,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(*no),
             ForecastModel::Logistic {
                 pair: _,
                 no,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(*no),
             ForecastModel::SVR {
                 pair: _,
                 no,
                 model: _,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(*no),
         }
     }
 
-    pub fn get_input_data_size(&self) -> MyResult<usize> {
+    pub fn get_params(&self) -> MyResult<ModelParams> {
         match self {
             ForecastModel::RandomForest {
                 pair: _,
                 no: _,
                 model: _,
-                input_data_size,
+                params,
                 memo: _,
-            } => Ok(*input_data_size),
+            } => Ok(params.clone()),
             ForecastModel::KNN {
                 pair: _,
                 no: _,
                 model: _,
-                input_data_size,
+                params,
                 memo: _,
-            } => Ok(*input_data_size),
+            } => Ok(params.clone()),
             ForecastModel::Linear {
                 pair: _,
                 no: _,
                 model: _,
-                input_data_size,
+                params,
                 memo: _,
-            } => Ok(*input_data_size),
+            } => Ok(params.clone()),
             ForecastModel::Ridge {
                 pair: _,
                 no: _,
                 model: _,
-                input_data_size,
+                params,
                 memo: _,
-            } => Ok(*input_data_size),
+            } => Ok(params.clone()),
             ForecastModel::LASSO {
                 pair: _,
                 no: _,
                 model: _,
-                input_data_size,
+                params,
                 memo: _,
-            } => Ok(*input_data_size),
+            } => Ok(params.clone()),
             ForecastModel::ElasticNet {
                 pair: _,
                 no: _,
                 model: _,
-                input_data_size,
+                params,
                 memo: _,
-            } => Ok(*input_data_size),
+            } => Ok(params.clone()),
             ForecastModel::Logistic {
                 pair: _,
                 no: _,
                 model: _,
-                input_data_size,
+                params,
                 memo: _,
-            } => Ok(*input_data_size),
+            } => Ok(params.clone()),
             ForecastModel::SVR {
                 pair: _,
                 no: _,
                 model: _,
-                input_data_size,
+                params,
                 memo: _,
-            } => Ok(*input_data_size),
+            } => Ok(params.clone()),
         }
     }
 
@@ -298,56 +319,56 @@ impl ForecastModel {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(model.predict(x)?),
             ForecastModel::KNN {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(model.predict(x)?),
             ForecastModel::Linear {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(model.predict(x)?),
             ForecastModel::Ridge {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(model.predict(x)?),
             ForecastModel::LASSO {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(model.predict(x)?),
             ForecastModel::ElasticNet {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(model.predict(x)?),
             ForecastModel::Logistic {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(model.predict(x)?),
             ForecastModel::SVR {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(model.predict(x)?),
         }
@@ -366,56 +387,56 @@ impl ForecastModel {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(bincode::serialize(&model)?),
             ForecastModel::KNN {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(bincode::serialize(&model)?),
             ForecastModel::Linear {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(bincode::serialize(&model)?),
             ForecastModel::Ridge {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(bincode::serialize(&model)?),
             ForecastModel::LASSO {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(bincode::serialize(&model)?),
             ForecastModel::ElasticNet {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(bincode::serialize(&model)?),
             ForecastModel::Logistic {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(bincode::serialize(&model)?),
             ForecastModel::SVR {
                 pair: _,
                 no: _,
                 model,
-                input_data_size: _,
+                params: _,
                 memo: _,
             } => Ok(bincode::serialize(&model)?),
         }
@@ -429,104 +450,104 @@ impl fmt::Display for ForecastModel {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 write!(
                     f,
-                    "RandomForest(pair: {}, no: {}, input_data_size: {}, memo: {})",
-                    pair, no, input_data_size, memo
+                    "RandomForest(pair: {}, no: {}, params: {:?}, memo: {})",
+                    pair, no, params, memo
                 )
             }
             ForecastModel::KNN {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 write!(
                     f,
-                    "KNN(pair: {}, no: {}, input_data_size: {}, memo: {})",
-                    pair, no, input_data_size, memo
+                    "KNN(pair: {}, no: {}, params: {:?}, memo: {})",
+                    pair, no, params, memo
                 )
             }
             ForecastModel::Linear {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 write!(
                     f,
-                    "Linear(pair: {}, no: {}, input_data_size: {}, memo: {})",
-                    pair, no, input_data_size, memo
+                    "Linear(pair: {}, no: {}, params: {:?}, memo: {})",
+                    pair, no, params, memo
                 )
             }
             ForecastModel::Ridge {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 write!(
                     f,
-                    "Ridge(pair: {}, no: {}, input_data_size: {}, memo: {})",
-                    pair, no, input_data_size, memo
+                    "Ridge(pair: {}, no: {}, params: {:?}, memo: {})",
+                    pair, no, params, memo
                 )
             }
             ForecastModel::LASSO {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 write!(
                     f,
-                    "LASSO(pair: {}, no: {}, input_data_size: {}, memo: {})",
-                    pair, no, input_data_size, memo
+                    "LASSO(pair: {}, no: {}, params: {:?}, memo: {})",
+                    pair, no, params, memo
                 )
             }
             ForecastModel::ElasticNet {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 write!(
                     f,
-                    "ElasticNet(pair: {}, no: {}, input_data_size: {}, memo: {})",
-                    pair, no, input_data_size, memo
+                    "ElasticNet(pair: {}, no: {}, params: {:?}, memo: {})",
+                    pair, no, params, memo
                 )
             }
             ForecastModel::Logistic {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 write!(
                     f,
-                    "Logistic(pair: {}, no: {}, input_data_size: {}, memo: {})",
-                    pair, no, input_data_size, memo
+                    "Logistic(pair: {}, no: {}, params: {:?}, memo: {})",
+                    pair, no, params, memo
                 )
             }
             ForecastModel::SVR {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 write!(
                     f,
-                    "SVR(pair: {}, no: {}, input_data_size: {}, memo: {})",
-                    pair, no, input_data_size, memo
+                    "SVR(pair: {}, no: {}, params: {:?}, memo: {})",
+                    pair, no, params, memo
                 )
             }
         }

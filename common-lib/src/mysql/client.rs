@@ -249,7 +249,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 params! {
@@ -257,7 +257,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_RANDOM_FOREST,
                     "data" => m.serialize_model_data()?,
-                    "input_data_size" => input_data_size,
+                    "input_data_size" => params.original_data_size,
                     "memo" => memo,
                 }
             }
@@ -265,7 +265,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 params! {
@@ -273,7 +273,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_KNN,
                     "data" => m.serialize_model_data()?,
-                    "input_data_size" => input_data_size,
+                    "input_data_size" => params.original_data_size,
                     "memo" => memo,
                 }
             }
@@ -281,7 +281,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 params! {
@@ -289,7 +289,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_LINEAR,
                     "data" => m.serialize_model_data()?,
-                    "input_data_size" => input_data_size,
+                    "input_data_size" => params.original_data_size,
                     "memo" => memo,
                 }
             }
@@ -297,7 +297,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 params! {
@@ -305,7 +305,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_RIDGE,
                     "data" => m.serialize_model_data()?,
-                    "input_data_size" => input_data_size,
+                    "input_data_size" => params.original_data_size,
                     "memo" => memo,
                 }
             }
@@ -313,7 +313,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 params! {
@@ -321,7 +321,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_LASSO,
                     "data" => m.serialize_model_data()?,
-                    "input_data_size" => input_data_size,
+                    "input_data_size" => params.original_data_size,
                     "memo" => memo,
                 }
             }
@@ -329,7 +329,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 params! {
@@ -337,7 +337,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_ELASTIC_NET,
                     "data" => m.serialize_model_data()?,
-                    "input_data_size" => input_data_size,
+                    "input_data_size" => params.original_data_size,
                     "memo" => memo,
                 }
             }
@@ -345,7 +345,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 params! {
@@ -353,7 +353,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_LOGISTIC,
                     "data" => m.serialize_model_data()?,
-                    "input_data_size" => input_data_size,
+                    "input_data_size" => params.original_data_size,
                     "memo" => memo,
                 }
             }
@@ -361,7 +361,7 @@ impl Client for DefaultClient {
                 pair,
                 no,
                 model: _,
-                input_data_size,
+                params,
                 memo,
             } => {
                 params! {
@@ -369,7 +369,7 @@ impl Client for DefaultClient {
                     "no" => no,
                     "type" => super::model::MODEL_TYPE_SVR,
                     "data" => m.serialize_model_data()?,
-                    "input_data_size" => input_data_size,
+                    "input_data_size" => params.original_data_size,
                     "memo" => memo,
                 }
             }

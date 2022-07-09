@@ -1,9 +1,11 @@
+use std::collections::HashSet;
+
 use chrono::{Duration, NaiveDateTime, Utc};
 use common_lib::{
     batch,
     domain::{
-        model::{ForecastModel, TrainingDataset},
-        service::{Converter, Param},
+        model::{ForecastModel, ModelParams, TrainingDataset},
+        service::Converter,
     },
     error::MyResult,
     mysql::{
@@ -11,7 +13,9 @@ use common_lib::{
         client::{Client, DefaultClient},
     },
 };
+use config::Config;
 use log::{debug, error, info, warn};
+use rand::Rng;
 use smartcore::{
     ensemble::random_forest_regressor::*,
     linalg::naive::dense_matrix::DenseMatrix,
@@ -23,7 +27,6 @@ use smartcore::{
     },
     math::distance::Distances,
     metrics::mean_squared_error,
-    model_selection::train_test_split,
     neighbors::knn_regressor::{KNNRegressor, KNNRegressorParameters},
     svm::{
         svr::{SVRParameters, SVR},
@@ -81,7 +84,10 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
     let end = Utc::now().naive_utc();
     let begin = (Utc::now() - Duration::hours(config.training_data_range_hour)).naive_utc();
 
-    let (org_x, org_y) = load_data(config, mysql_cli, begin, end)?;
+    let mut p = ModelParams::new_default();
+    p.original_data_size = config.forecast_input_size;
+
+    let (org_x, org_y) = load_data(config, mysql_cli, begin, end, &p)?;
     if org_x.len() < config.training_data_required_count {
         warn!(
             "training data is too little. skip training. count:{}",
@@ -89,180 +95,71 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         );
         return Ok(());
     }
+    debug!(
+        "loaded data count is (org_x,org_y)=({},{})",
+        org_x.len(),
+        org_y.len()
+    );
 
     save_training_datasets(config, mysql_cli, &org_x, &org_y)?;
 
-    let matrix = DenseMatrix::from_2d_vec(&org_x);
-    let (train_base_x, test_x, train_base_y, test_y) = train_test_split(&matrix, &org_y, 0.2, true);
+    let (train_base_x, test_x, train_base_y, test_y) = train_test_split(&org_x, &org_y, 0.2)?;
+    debug!(
+        "training base data count is (x,y)=({},{})",
+        train_base_x.len(),
+        train_base_y.len()
+    );
+    debug!(
+        "test data count is (x,y)=({},{})",
+        test_x.len(),
+        test_y.len()
+    );
 
     let mut models: Vec<ForecastModel> = vec![];
     if let Some(m) = load_existing_model(config, mysql_cli)? {
-        let input_data_size = m.get_input_data_size()?;
-        if input_data_size == config.forecast_input_size {
+        let params = m.get_params()?;
+        if params.original_data_size == config.forecast_input_size {
             models.push(m);
         } else {
             warn!(
                 "input data size is not match, not use existing model. model: {}, training: {}",
-                input_data_size, config.forecast_input_size
+                params.original_data_size, config.forecast_input_size
             );
         }
     }
+
     for index in 1..=config.training_count {
-        debug!("training RandomForest {:2} ...", index);
-        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-        let m = ForecastModel::RandomForest {
-            pair: config.currency_pair.clone(),
-            no: config.forecast_model_no,
-            model: RandomForestRegressor::fit(&train_x, &train_y, Default::default())?,
-            input_data_size: config.forecast_input_size,
-            memo: "RandomForest".to_string(),
-        };
-        models.push(m);
-    }
-    for index in 1..=config.training_count {
-        debug!("training KNN {:2} ...", index);
-        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-        let r = KNNRegressor::fit(
-            &train_x,
-            &train_y,
-            KNNRegressorParameters::default().with_distance(Distances::euclidian()),
-        )?;
-        let m = ForecastModel::KNN {
-            pair: config.currency_pair.clone(),
-            no: config.forecast_model_no,
-            model: r,
-            input_data_size: config.forecast_input_size,
-            memo: "KNN".to_string(),
-        };
-        models.push(m);
-    }
-    for index in 1..=config.training_count {
-        debug!("training Linear {:2} ...", index);
-        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-        let r = LinearRegression::fit(&train_x, &train_y, Default::default())?;
-        let m = ForecastModel::Linear {
-            pair: config.currency_pair.clone(),
-            no: config.forecast_model_no,
-            model: r,
-            input_data_size: config.forecast_input_size,
-            memo: "Linear".to_string(),
-        };
-        models.push(m);
-    }
-    for index in 1..=config.training_count {
-        debug!("training Ridge {:2} ...", index);
-        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-        let r = RidgeRegression::fit(
-            &train_x,
-            &train_y,
-            RidgeRegressionParameters::default().with_alpha(0.5),
-        )?;
-        let m = ForecastModel::Ridge {
-            pair: config.currency_pair.clone(),
-            no: config.forecast_model_no,
-            model: r,
-            input_data_size: config.forecast_input_size,
-            memo: "Ridge".to_string(),
-        };
-        models.push(m);
-    }
-    for index in 1..=config.training_count {
-        debug!("training LASSO {:2} ...", index);
-        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-        let r = Lasso::fit(
-            &train_x,
-            &train_y,
-            LassoParameters::default().with_alpha(0.5),
-        )?;
-        let m = ForecastModel::LASSO {
-            pair: config.currency_pair.clone(),
-            no: config.forecast_model_no,
-            model: r,
-            input_data_size: config.forecast_input_size,
-            memo: "LASSO".to_string(),
-        };
-        models.push(m);
-    }
-    for index in 1..=config.training_count {
-        debug!("training ElasticNet {:2} ...", index);
-        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-        let r = ElasticNet::fit(
-            &train_x,
-            &train_y,
-            ElasticNetParameters::default()
-                .with_alpha(0.5)
-                .with_l1_ratio(0.5),
-        )?;
-        let m = ForecastModel::ElasticNet {
-            pair: config.currency_pair.clone(),
-            no: config.forecast_model_no,
-            model: r,
-            input_data_size: config.forecast_input_size,
-            memo: "ElasticNet".to_string(),
-        };
-        models.push(m);
-    }
-    // 学習が終わらなかったためコメントアウト
-    // for index in 1..=config.training_count {
-    //     debug!("training Logistic {:2} ...", index);
-    //     let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-    //     let r = LogisticRegression::fit(
-    //         &train_x,
-    //         &train_y,
-    //         Default::default(),
-    //     )?;
-    //     let m = ForecastModel::Logistic {
-    //         pair: config.currency_pair.clone(),
-    //         no: config.forecast_model_no,
-    //         model: r,
-    //         memo: "Logistic".to_string(),
-    //     };
-    //     models.push(m);
-    // }
-    for index in 1..=config.training_count {
-        debug!("training SVR {:2} ...", index);
-        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2, true);
-        let r = SVR::fit(
-            &train_x,
-            &train_y,
-            SVRParameters::default()
-                .with_kernel(Kernels::rbf(0.5))
-                .with_c(2000.0)
-                .with_eps(10.0),
-        )?;
-        let m = ForecastModel::SVR {
-            pair: config.currency_pair.clone(),
-            no: config.forecast_model_no,
-            model: r,
-            input_data_size: config.forecast_input_size,
-            memo: "SVR".to_string(),
-        };
-        models.push(m);
+        let (train_x, _, train_y, _) = train_test_split(&train_base_x, &train_base_y, 0.2)?;
+
+        debug!("training[{:2}] RandomForest ...", index);
+        models.push(make_random_forest(&p, &train_x, &train_y, config)?);
+
+        debug!("training[{:2}] KNN ...", index);
+        models.push(make_knn(&p, &train_x, &train_y, config)?);
+
+        debug!("training[{:2}] Linear ...", index);
+        models.push(make_linear(&p, &train_x, &train_y, config)?);
+
+        debug!("training[{:2}] Ridge ...", index);
+        models.push(make_ridge(&p, &train_x, &train_y, config)?);
+
+        debug!("training[{:2}] LASSO ...", index);
+        models.push(make_lasso(&p, &train_x, &train_y, config)?);
+
+        debug!("training[{:2}] ElasticNet ...", index);
+        models.push(make_elastic_net(&p, &train_x, &train_y, config)?);
+
+        //  学習が終わらなかったためコメントアウト
+        //  debug!("training[{:2}] Logistic ...", index);
+        //  models.push(make_elastic_net(&p, &train_x, &train_y, config)?);
+
+        debug!("training[{:2}] SVR ...", index);
+        models.push(make_svr(&p, &train_x, &train_y, config)?);
     }
 
-    let mut best_model: Option<&ForecastModel> = None;
-    let mut best_mne: Option<f64> = None;
-    for m in models.iter() {
-        let y = m.predict_for_training(&test_x)?;
-
-        let mne = mean_squared_error(&test_y, &y);
-        info!("MSE: {:.6}, model: {}", mne, m);
-
-        if best_mne.is_none() || mne < best_mne.unwrap() {
-            best_model = Some(m);
-            best_mne = Some(mne);
-        }
-    }
-
-    if let Some(mne) = best_mne {
-        info!("Best MSE: {:6}, model: {}", mne, best_model.unwrap());
-    } else {
-        error!("model not found");
-        return Ok(());
-    }
-
-    let best_model = best_model.unwrap();
-    let y = best_model.predict_for_training(&test_x)?;
+    let best_model: &ForecastModel = select_best_model(&models, &test_x, &test_y)?.unwrap();
+    let matrix = DenseMatrix::from_2d_vec(&test_x);
+    let y = best_model.predict_for_training(&matrix)?;
     for row in 0..test_y.len() {
         let want = test_y[row];
         let got = y[row];
@@ -286,6 +183,7 @@ fn load_data(
     mysql_cli: &DefaultClient,
     begin: NaiveDateTime,
     end: NaiveDateTime,
+    params: &ModelParams,
 ) -> MyResult<(Vec<Vec<f64>>, Vec<f64>)> {
     let mut x: Vec<Vec<f64>> = vec![];
     let mut y: Vec<f64> = vec![];
@@ -327,12 +225,7 @@ fn load_data(
             if offset == rates.len() && x.len() % 2 == 0 {
                 continue;
             }
-            let p = Param {
-                fast_period: 3,
-                slow_period: 6,
-                signal_period: 4,
-            };
-            x.push(converter.convert_to_input_data(&data, &p)?);
+            x.push(converter.convert_to_input_data(&data, params)?);
             y.push(truth.unwrap().rate);
         }
 
@@ -381,4 +274,225 @@ fn save_model(mysql_cli: &DefaultClient, model: &ForecastModel) -> MyResult<()> 
         Ok(())
     })?;
     Ok(())
+}
+
+fn make_random_forest(
+    params: &ModelParams,
+    train_x: &Vec<Vec<f64>>,
+    train_y: &Vec<f64>,
+    config: &Config,
+) -> MyResult<ForecastModel> {
+    let matrix = DenseMatrix::from_2d_vec(&train_x);
+    Ok(ForecastModel::RandomForest {
+        pair: config.currency_pair.clone(),
+        no: config.forecast_model_no,
+        model: RandomForestRegressor::fit(&matrix, &train_y, Default::default())?,
+        params: params.clone(),
+        memo: "RandomForest".to_string(),
+    })
+}
+
+fn make_knn(
+    params: &ModelParams,
+    train_x: &Vec<Vec<f64>>,
+    train_y: &Vec<f64>,
+    config: &Config,
+) -> MyResult<ForecastModel> {
+    let matrix = DenseMatrix::from_2d_vec(&train_x);
+    let r = KNNRegressor::fit(
+        &matrix,
+        &train_y,
+        KNNRegressorParameters::default().with_distance(Distances::euclidian()),
+    )?;
+    Ok(ForecastModel::KNN {
+        pair: config.currency_pair.clone(),
+        no: config.forecast_model_no,
+        model: r,
+        params: params.clone(),
+        memo: "KNN".to_string(),
+    })
+}
+
+fn make_linear(
+    params: &ModelParams,
+    train_x: &Vec<Vec<f64>>,
+    train_y: &Vec<f64>,
+    config: &Config,
+) -> MyResult<ForecastModel> {
+    let matrix = DenseMatrix::from_2d_vec(&train_x);
+    let r = LinearRegression::fit(&matrix, &train_y, Default::default())?;
+    Ok(ForecastModel::Linear {
+        pair: config.currency_pair.clone(),
+        no: config.forecast_model_no,
+        model: r,
+        params: params.clone(),
+        memo: "Linear".to_string(),
+    })
+}
+
+fn make_ridge(
+    params: &ModelParams,
+    train_x: &Vec<Vec<f64>>,
+    train_y: &Vec<f64>,
+    config: &Config,
+) -> MyResult<ForecastModel> {
+    let matrix = DenseMatrix::from_2d_vec(&train_x);
+    let r = RidgeRegression::fit(
+        &matrix,
+        &train_y,
+        RidgeRegressionParameters::default().with_alpha(0.5),
+    )?;
+    Ok(ForecastModel::Ridge {
+        pair: config.currency_pair.clone(),
+        no: config.forecast_model_no,
+        model: r,
+        params: params.clone(),
+        memo: "Ridge".to_string(),
+    })
+}
+fn make_lasso(
+    params: &ModelParams,
+    train_x: &Vec<Vec<f64>>,
+    train_y: &Vec<f64>,
+    config: &Config,
+) -> MyResult<ForecastModel> {
+    let matrix = DenseMatrix::from_2d_vec(&train_x);
+    let r = Lasso::fit(
+        &matrix,
+        &train_y,
+        LassoParameters::default().with_alpha(0.5),
+    )?;
+    Ok(ForecastModel::LASSO {
+        pair: config.currency_pair.clone(),
+        no: config.forecast_model_no,
+        model: r,
+        params: params.clone(),
+        memo: "LASSO".to_string(),
+    })
+}
+fn make_elastic_net(
+    params: &ModelParams,
+    train_x: &Vec<Vec<f64>>,
+    train_y: &Vec<f64>,
+    config: &Config,
+) -> MyResult<ForecastModel> {
+    let matrix = DenseMatrix::from_2d_vec(&train_x);
+    let r = ElasticNet::fit(
+        &matrix,
+        &train_y,
+        ElasticNetParameters::default()
+            .with_alpha(0.5)
+            .with_l1_ratio(0.5),
+    )?;
+    Ok(ForecastModel::ElasticNet {
+        pair: config.currency_pair.clone(),
+        no: config.forecast_model_no,
+        model: r,
+        params: params.clone(),
+        memo: "ElasticNet".to_string(),
+    })
+}
+
+// fn make_ligistic(
+//     params: &ModelParams,
+//     train_x: &Vec<Vec<f64>>,
+//     train_y: &Vec<f64>,
+//     config: &Config,
+// ) -> MyResult<ForecastModel> {
+//     let matrix = DenseMatrix::from_2d_vec(&train_x);
+//     let r = LogisticRegression::fit(
+//         &train_x,
+//         &train_y,
+//         Default::default(),
+//     )?;
+//     Ok(ForecastModel::Logistic {
+//         pair: config.currency_pair.clone(),
+//         no: config.forecast_model_no,
+//         model: r,
+//         memo: "Logistic".to_string(),
+//     })
+// }
+
+fn make_svr(
+    params: &ModelParams,
+    train_x: &Vec<Vec<f64>>,
+    train_y: &Vec<f64>,
+    config: &Config,
+) -> MyResult<ForecastModel> {
+    let matrix = DenseMatrix::from_2d_vec(&train_x);
+    let r = SVR::fit(
+        &matrix,
+        &train_y,
+        SVRParameters::default()
+            .with_kernel(Kernels::rbf(0.5))
+            .with_c(2000.0)
+            .with_eps(10.0),
+    )?;
+    Ok(ForecastModel::SVR {
+        pair: config.currency_pair.clone(),
+        no: config.forecast_model_no,
+        model: r,
+        params: params.clone(),
+        memo: "SVR".to_string(),
+    })
+}
+
+fn select_best_model<'a>(
+    models: &'a Vec<ForecastModel>,
+    test_x: &Vec<Vec<f64>>,
+    test_y: &Vec<f64>,
+) -> MyResult<Option<&'a ForecastModel>> {
+    let matrix = DenseMatrix::from_2d_vec(test_x);
+
+    let mut best_model: Option<&ForecastModel> = None;
+    let mut best_mne: Option<f64> = None;
+    for m in models.iter() {
+        let y = m.predict_for_training(&matrix)?;
+
+        let mne = mean_squared_error(test_y, &y);
+        if best_mne.is_none() || mne < best_mne.unwrap() {
+            best_model = Some(m);
+            best_mne = Some(mne);
+        }
+    }
+
+    if let Some(mne) = best_mne {
+        let m = best_model.unwrap();
+        info!("Best MSE: {:6}, model: {}", mne, m);
+        Ok(Some(m))
+    } else {
+        error!("model not found");
+        Ok(None)
+    }
+}
+
+fn train_test_split(
+    x: &Vec<Vec<f64>>,
+    y: &Vec<f64>,
+    test_ratio: f32,
+) -> MyResult<(Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<f64>, Vec<f64>)> {
+    let mut test_indexes = HashSet::new();
+    let mut rng = rand::thread_rng();
+
+    for i in 0..x.len() {
+        if rng.gen::<f32>() <= test_ratio {
+            test_indexes.insert(i);
+        }
+    }
+
+    let mut train_x = vec![];
+    let mut train_y = vec![];
+    let mut test_x = vec![];
+    let mut test_y = vec![];
+    for i in 0..x.len() {
+        if test_indexes.contains(&i) {
+            test_x.push(x[i].clone());
+            test_y.push(y[i]);
+        } else {
+            train_x.push(x[i].clone());
+            train_y.push(y[i]);
+        }
+    }
+
+    Ok((train_x, test_x, train_y, test_y))
 }
