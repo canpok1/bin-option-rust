@@ -72,22 +72,22 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
         for rate in &rates {
             let rate_size = rate.histories.len();
             for model in &models {
-                let params = model.get_params()?;
-                if params.original_data_size != rate_size {
+                let input_data_size = model.get_input_data_size()?;
+                if input_data_size != rate_size {
                     warn!(
                         "input data size is not match, skip model no {}. size(model): {}, size(input data): {}",
-                        model.get_no()?, params.original_data_size, rate_size
+                        model.get_no()?, input_data_size, rate_size
                     );
                     continue;
                 }
 
-                let input_data = converter.convert_to_input_data(&rate.histories, &params)?;
+                let features = converter.convert_to_features(&rate.histories, &model.get_feature_params()?)?;
 
                 let result = ForecastResult::new(
                     rate.id.to_string(),
                     model.get_no()?,
                     0,
-                    model.predict(&input_data)?,
+                    model.predict(&features)?,
                     "after5min".to_string(),
                 )?;
                 info!(

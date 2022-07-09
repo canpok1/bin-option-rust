@@ -4,7 +4,7 @@ use chrono::{Duration, NaiveDateTime, Utc};
 use common_lib::{
     batch,
     domain::{
-        model::{ForecastModel, ModelParams, TrainingDataset},
+        model::{FeatureParams, ForecastModel, TrainingDataset},
         service::Converter,
     },
     error::MyResult,
@@ -84,8 +84,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
     let end = Utc::now().naive_utc();
     let begin = (Utc::now() - Duration::hours(config.training_data_range_hour)).naive_utc();
 
-    let mut p = ModelParams::new_default();
-    p.original_data_size = config.forecast_input_size;
+    let p = FeatureParams::new_default();
 
     let (org_x, org_y) = load_data(config, mysql_cli, begin, end, &p)?;
     if org_x.len() < config.training_data_required_count {
@@ -117,13 +116,13 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
 
     let mut models: Vec<ForecastModel> = vec![];
     if let Some(m) = load_existing_model(config, mysql_cli)? {
-        let params = m.get_params()?;
-        if params.original_data_size == config.forecast_input_size {
+        let input_data_size = m.get_input_data_size()?;
+        if input_data_size == config.forecast_input_size {
             models.push(m);
         } else {
             warn!(
                 "input data size is not match, not use existing model. model: {}, training: {}",
-                params.original_data_size, config.forecast_input_size
+                input_data_size, config.forecast_input_size
             );
         }
     }
@@ -183,7 +182,7 @@ fn load_data(
     mysql_cli: &DefaultClient,
     begin: NaiveDateTime,
     end: NaiveDateTime,
-    params: &ModelParams,
+    params: &FeatureParams,
 ) -> MyResult<(Vec<Vec<f64>>, Vec<f64>)> {
     let mut x: Vec<Vec<f64>> = vec![];
     let mut y: Vec<f64> = vec![];
@@ -225,7 +224,7 @@ fn load_data(
             if offset == rates.len() && x.len() % 2 == 0 {
                 continue;
             }
-            x.push(converter.convert_to_input_data(&data, params)?);
+            x.push(converter.convert_to_features(&data, params)?);
             y.push(truth.unwrap().rate);
         }
 
@@ -277,7 +276,7 @@ fn save_model(mysql_cli: &DefaultClient, model: &ForecastModel) -> MyResult<()> 
 }
 
 fn make_random_forest(
-    params: &ModelParams,
+    params: &FeatureParams,
     train_x: &Vec<Vec<f64>>,
     train_y: &Vec<f64>,
     config: &Config,
@@ -287,13 +286,14 @@ fn make_random_forest(
         pair: config.currency_pair.clone(),
         no: config.forecast_model_no,
         model: RandomForestRegressor::fit(&matrix, &train_y, Default::default())?,
-        params: params.clone(),
+        input_data_size: config.forecast_input_size,
+        feature_params: params.clone(),
         memo: "RandomForest".to_string(),
     })
 }
 
 fn make_knn(
-    params: &ModelParams,
+    params: &FeatureParams,
     train_x: &Vec<Vec<f64>>,
     train_y: &Vec<f64>,
     config: &Config,
@@ -308,13 +308,14 @@ fn make_knn(
         pair: config.currency_pair.clone(),
         no: config.forecast_model_no,
         model: r,
-        params: params.clone(),
+        input_data_size: config.forecast_input_size,
+        feature_params: params.clone(),
         memo: "KNN".to_string(),
     })
 }
 
 fn make_linear(
-    params: &ModelParams,
+    params: &FeatureParams,
     train_x: &Vec<Vec<f64>>,
     train_y: &Vec<f64>,
     config: &Config,
@@ -325,13 +326,14 @@ fn make_linear(
         pair: config.currency_pair.clone(),
         no: config.forecast_model_no,
         model: r,
-        params: params.clone(),
+        input_data_size: config.forecast_input_size,
+        feature_params: params.clone(),
         memo: "Linear".to_string(),
     })
 }
 
 fn make_ridge(
-    params: &ModelParams,
+    params: &FeatureParams,
     train_x: &Vec<Vec<f64>>,
     train_y: &Vec<f64>,
     config: &Config,
@@ -346,12 +348,13 @@ fn make_ridge(
         pair: config.currency_pair.clone(),
         no: config.forecast_model_no,
         model: r,
-        params: params.clone(),
+        input_data_size: config.forecast_input_size,
+        feature_params: params.clone(),
         memo: "Ridge".to_string(),
     })
 }
 fn make_lasso(
-    params: &ModelParams,
+    params: &FeatureParams,
     train_x: &Vec<Vec<f64>>,
     train_y: &Vec<f64>,
     config: &Config,
@@ -366,12 +369,13 @@ fn make_lasso(
         pair: config.currency_pair.clone(),
         no: config.forecast_model_no,
         model: r,
-        params: params.clone(),
+        input_data_size: config.forecast_input_size,
+        feature_params: params.clone(),
         memo: "LASSO".to_string(),
     })
 }
 fn make_elastic_net(
-    params: &ModelParams,
+    params: &FeatureParams,
     train_x: &Vec<Vec<f64>>,
     train_y: &Vec<f64>,
     config: &Config,
@@ -388,13 +392,14 @@ fn make_elastic_net(
         pair: config.currency_pair.clone(),
         no: config.forecast_model_no,
         model: r,
-        params: params.clone(),
+        input_data_size: config.forecast_input_size,
+        feature_params: params.clone(),
         memo: "ElasticNet".to_string(),
     })
 }
 
 // fn make_ligistic(
-//     params: &ModelParams,
+//     params: &FeatureParams,
 //     train_x: &Vec<Vec<f64>>,
 //     train_y: &Vec<f64>,
 //     config: &Config,
@@ -414,7 +419,7 @@ fn make_elastic_net(
 // }
 
 fn make_svr(
-    params: &ModelParams,
+    params: &FeatureParams,
     train_x: &Vec<Vec<f64>>,
     train_y: &Vec<f64>,
     config: &Config,
@@ -432,7 +437,8 @@ fn make_svr(
         pair: config.currency_pair.clone(),
         no: config.forecast_model_no,
         model: r,
-        params: params.clone(),
+        input_data_size: config.forecast_input_size,
+        feature_params: params.clone(),
         memo: "SVR".to_string(),
     })
 }
