@@ -71,20 +71,12 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
         let mut results: Vec<ForecastResult> = vec![];
         for rate in &rates {
             let rate_size = rate.histories.len();
-            if rate_size != config.forecast_input_size {
-                warn!(
-                    "rate size is unsupported size. rate_id: {}, size: {}, supported: {}, ",
-                    rate.id, rate_size, config.forecast_input_size
-                );
-                continue;
-            }
-
             for model in &models {
                 let params = model.get_params()?;
-                if params.original_data_size != config.forecast_input_size {
+                if params.original_data_size != rate_size {
                     warn!(
-                        "input data size is not match, skip model no {}. size(model): {}, size(batch): {}",
-                        model.get_no()?, params.original_data_size, config.forecast_input_size
+                        "input data size is not match, skip model no {}. size(model): {}, size(input data): {}",
+                        model.get_no()?, params.original_data_size, rate_size
                     );
                     continue;
                 }
