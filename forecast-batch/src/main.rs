@@ -2,7 +2,10 @@ extern crate common_lib;
 
 use common_lib::{
     batch,
-    domain::{model::ForecastResult, service::Converter},
+    domain::{
+        model::ForecastResult,
+        service::{Converter, Param},
+    },
     error::MyResult,
     mysql::{
         self,
@@ -89,7 +92,12 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
                     continue;
                 }
 
-                let input_data = converter.convert_to_input_data(&rate.histories)?;
+                let p = Param {
+                    fast_period: 3,
+                    slow_period: 6,
+                    signal_period: 4,
+                };
+                let input_data = converter.convert_to_input_data(&rate.histories, &p)?;
 
                 let result = ForecastResult::new(
                     rate.id.to_string(),

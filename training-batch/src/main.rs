@@ -3,7 +3,7 @@ use common_lib::{
     batch,
     domain::{
         model::{ForecastModel, TrainingDataset},
-        service::Converter,
+        service::{Converter, Param},
     },
     error::MyResult,
     mysql::{
@@ -19,7 +19,6 @@ use smartcore::{
         elastic_net::{ElasticNet, ElasticNetParameters},
         lasso::{Lasso, LassoParameters},
         linear_regression::LinearRegression,
-        logistic_regression::LogisticRegression,
         ridge_regression::{RidgeRegression, RidgeRegressionParameters},
     },
     math::distance::Distances,
@@ -328,7 +327,12 @@ fn load_data(
             if offset == rates.len() && x.len() % 2 == 0 {
                 continue;
             }
-            x.push(converter.convert_to_input_data(&data)?);
+            let p = Param {
+                fast_period: 3,
+                slow_period: 6,
+                signal_period: 4,
+            };
+            x.push(converter.convert_to_input_data(&data, &p)?);
             y.push(truth.unwrap().rate);
         }
 
