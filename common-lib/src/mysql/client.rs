@@ -21,9 +21,9 @@ static TABLE_NAME_FORECAST_ERRORS: &str = "forecast_errors";
 static TABLE_NAME_TRAINING_DATASETS: &str = "training_datasets";
 
 pub trait Client {
-    fn with_transaction<F>(&self, f: F) -> MyResult<()>
+    fn with_transaction<F, T>(&self, f: F) -> MyResult<T>
     where
-        F: FnMut(&mut Transaction) -> MyResult<()>;
+        F: FnMut(&mut Transaction) -> MyResult<T>;
 
     fn insert_rates_for_training(
         &self,
@@ -150,17 +150,17 @@ impl Client for DefaultClient {
     //     )
     // }
     // ```
-    fn with_transaction<F>(&self, mut f: F) -> MyResult<()>
+    fn with_transaction<F, T>(&self, mut f: F) -> MyResult<T>
     where
-        F: FnMut(&mut Transaction) -> MyResult<()>,
+        F: FnMut(&mut Transaction) -> MyResult<T>,
     {
         match self.pool.get_conn()?.start_transaction(TxOpts::default()) {
             Ok(mut tx) => match f(&mut tx) {
-                Ok(_) => {
+                Ok(v) => {
                     if let Err(err) = tx.commit() {
                         Err(Box::new(err))
                     } else {
-                        Ok(())
+                        Ok(v)
                     }
                 }
                 Err(err) => Err(err),

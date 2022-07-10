@@ -11,6 +11,7 @@ use smartcore::{
         logistic_regression::LogisticRegression, ridge_regression::RidgeRegression,
     },
     math::distance::euclidian,
+    metrics::mean_squared_error,
     neighbors::knn_regressor::KNNRegressor,
     svm::{svr::SVR, RBFKernel},
 };
@@ -253,7 +254,7 @@ impl ForecastModel {
         }
     }
 
-    pub fn set_performance_mse(&mut self, v: f64) -> MyResult<()> {
+    fn set_performance_mse(&mut self, v: f64) -> MyResult<()> {
         match self {
             ForecastModel::RandomForest {
                 performance_mse, ..
@@ -299,7 +300,19 @@ impl ForecastModel {
         Ok(())
     }
 
-    pub fn predict_for_training(&self, x: &DenseMatrix<f64>) -> MyResult<Vec<f64>> {
+    pub fn update_performance(
+        &mut self,
+        test_x: &Vec<Vec<f64>>,
+        test_y: &Vec<f64>,
+    ) -> MyResult<()> {
+        let matrix = DenseMatrix::from_2d_vec(test_x);
+        let y = self.predict_for_training(&matrix)?;
+        let mse = mean_squared_error(test_y, &y);
+        self.set_performance_mse(mse)?;
+        Ok(())
+    }
+
+    fn predict_for_training(&self, x: &DenseMatrix<f64>) -> MyResult<Vec<f64>> {
         match self {
             ForecastModel::RandomForest { model, .. } => Ok(model.predict(x)?),
             ForecastModel::KNN { model, .. } => Ok(model.predict(x)?),
@@ -340,104 +353,112 @@ impl fmt::Display for ForecastModel {
                 pair,
                 no,
                 feature_params,
+                performance_mse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "RandomForest(pair: {}, no: {}, feature_params: {:?}, memo: {})",
-                    pair, no, feature_params, memo
+                    "RandomForest(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, memo
                 )
             }
             ForecastModel::KNN {
                 pair,
                 no,
                 feature_params,
+                performance_mse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "KNN(pair: {}, no: {}, feature_params: {:?}, memo: {})",
-                    pair, no, feature_params, memo
+                    "KNN(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, memo
                 )
             }
             ForecastModel::Linear {
                 pair,
                 no,
                 feature_params,
+                performance_mse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "Linear(pair: {}, no: {}, feature_params: {:?}, memo: {})",
-                    pair, no, feature_params, memo
+                    "Linear(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, memo
                 )
             }
             ForecastModel::Ridge {
                 pair,
                 no,
                 feature_params,
+                performance_mse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "Ridge(pair: {}, no: {}, feature_params: {:?}, memo: {})",
-                    pair, no, feature_params, memo
+                    "Ridge(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, memo
                 )
             }
             ForecastModel::LASSO {
                 pair,
                 no,
                 feature_params,
+                performance_mse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "LASSO(pair: {}, no: {}, feature_params: {:?}, memo: {})",
-                    pair, no, feature_params, memo
+                    "LASSO(pair: {}, no: {}, feature_params: {:?}, peformance_mse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, memo
                 )
             }
             ForecastModel::ElasticNet {
                 pair,
                 no,
                 feature_params,
+                performance_mse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "ElasticNet(pair: {}, no: {}, feature_params: {:?}, memo: {})",
-                    pair, no, feature_params, memo
+                    "ElasticNet(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, memo
                 )
             }
             ForecastModel::Logistic {
                 pair,
                 no,
                 feature_params,
+                performance_mse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "Logistic(pair: {}, no: {}, feature_params: {:?}, memo: {})",
-                    pair, no, feature_params, memo
+                    "Logistic(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, memo
                 )
             }
             ForecastModel::SVR {
                 pair,
                 no,
                 feature_params,
+                performance_mse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "SVR(pair: {}, no: {}, feature_params: {:?}, memo: {})",
-                    pair, no, feature_params, memo
+                    "SVR(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, memo
                 )
             }
         }

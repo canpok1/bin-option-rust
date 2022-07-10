@@ -2,7 +2,7 @@ use chrono::{Duration, NaiveDateTime, Utc};
 use common_lib::{
     batch,
     domain::{
-        model::{FeatureParams, TrainingDataset},
+        model::{FeatureParams, ForecastModel},
         service::Converter,
     },
     error::MyResult,
@@ -13,7 +13,7 @@ use common_lib::{
 };
 use log::{debug, error, info, warn};
 
-use crate::training::Trainer;
+use crate::training::ModelMaker;
 
 mod config;
 mod training;
@@ -95,8 +95,23 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         test_y.len()
     );
 
-    let trainer = Trainer { config, mysql_cli };
-    trainer.training(&p, &train_base_x, &train_base_y, &test_x, &test_y)?;
+    let forecast_model_no = config.forecast_model_no;
+    let maker = ModelMaker {
+        config,
+        mysql_cli,
+        forecast_model_no,
+    };
+    let mut models = maker.make_new_models(&p, &train_base_x, &train_base_y, &test_x, &test_y)?;
+
+    if let Some(model) = maker.load_existing_model()? {
+        models.push(model);
+    }
+
+    if let Some(index) = find_best_model_index(&models)? {
+        if let Some(m) = models.get(index) {
+            save_model(mysql_cli, m)?;
+        }
+    }
 
     Ok(())
 }
@@ -157,23 +172,23 @@ fn load_data(
     Ok((x, y))
 }
 
-fn save_training_datasets(
-    config: &config::Config,
-    mysql_cli: &DefaultClient,
-    x: &Vec<Vec<f64>>,
-    y: &Vec<f64>,
-) -> MyResult<()> {
-    let mut datasets: Vec<TrainingDataset> = vec![];
-    for i in 0..x.len() {
-        let dataset = TrainingDataset::new(
-            config.currency_pair.clone(),
-            x[i].clone(),
-            y[i].clone(),
-            "inserted by training-batch".to_string(),
-        )?;
-        datasets.push(dataset);
+fn find_best_model_index(models: &Vec<ForecastModel>) -> MyResult<Option<usize>> {
+    let mut best_model_index: Option<usize> = None;
+    let mut best_mse: Option<f64> = None;
+    for (i, m) in models.iter().enumerate() {
+        let mse = m.get_performance_mse()?;
+        if best_mse.is_none() || mse < best_mse.unwrap() {
+            best_model_index = Some(i);
+            best_mse = Some(mse);
+        }
     }
-    mysql_cli.with_transaction(|tx| mysql_cli.insert_training_datasets(tx, &datasets))?;
+    Ok(best_model_index)
+}
 
+fn save_model(mysql_cli: &DefaultClient, model: &ForecastModel) -> MyResult<()> {
+    mysql_cli.with_transaction(|tx| {
+        mysql_cli.upsert_forecast_model(tx, model)?;
+        Ok(())
+    })?;
     Ok(())
 }
