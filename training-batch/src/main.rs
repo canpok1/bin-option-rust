@@ -1,18 +1,21 @@
-use chrono::{Duration, Utc};
 use common_lib::{
     batch,
-    domain::model::{FeatureParams, ForecastModel, InputData},
-    error::{MyError, MyResult},
+    domain::model::ForecastModel,
+    error::MyResult,
     mysql::{
         self,
         client::{Client, DefaultClient},
     },
 };
+use ga::Gene;
 use log::{error, info};
+use rand::Rng;
+use training::InputDataLoader;
 
 use crate::training::ModelMaker;
 
 mod config;
+mod ga;
 mod training;
 mod util;
 
@@ -61,48 +64,101 @@ fn main() {
 }
 
 fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
-    let (org_x, org_y) = setup_input_data(config, mysql_cli)?;
-    let p = FeatureParams::new_default();
+    let loader = InputDataLoader { config, mysql_cli };
+    let (org_x, org_y) = loader.load()?;
     let (train_base_x, test_x, train_base_y, test_y) = util::train_test_split(&org_x, &org_y, 0.2)?;
 
-    let forecast_model_no = config.forecast_model_no;
     let maker = ModelMaker {
         config,
         mysql_cli,
-        forecast_model_no,
+        train_base_x: &train_base_x,
+        train_base_y: &train_base_y,
+        test_x: &test_x,
+        test_y: &test_y,
     };
-    let mut models = maker.make_new_models(&p, &train_base_x, &train_base_y, &test_x, &test_y)?;
 
-    if let Some(model) = maker.load_existing_model(&test_x, &test_y)? {
-        models.push(model);
-    }
+    let mut genes: Vec<Gene> = vec![
+        Gene::new_random_gene(config)?,
+        Gene::new_random_gene(config)?,
+        Gene::new_random_gene(config)?,
+        Gene::new_random_gene(config)?,
+    ];
+    for gen_count in 1..=config.generation_count {
+        info!("generation[{}] start", gen_count);
 
-    if let Some(index) = find_best_model_index(&models)? {
-        if let Some(m) = models.get(index) {
-            save_model(mysql_cli, m)?;
+        let mut results: Vec<f64> = vec![];
+        for (i, gene) in genes.iter().enumerate() {
+            info!("generation[{}] gene[{}] processing ...", gen_count, i);
+
+            let p = gene.to_feature_params()?;
+            let model_no = config.forecast_model_no + i as i32;
+
+            let models = maker.make_new_models(model_no, &p)?;
+            let index = find_best_model_index(&models)?;
+            if let Some(best_model) = models.get(index) {
+                results.push(best_model.get_performance_mse()?);
+                save_model(mysql_cli, best_model)?;
+            }
         }
+        info!("generation[{}] result: {:?}", gen_count, results);
+
+        if gen_count == config.generation_count {
+            break;
+        }
+
+        // 次世代を生成
+        let mut new_genes: Vec<Gene> = vec![];
+        while new_genes.len() < genes.len() {
+            let mut rng = rand::thread_rng();
+            let v: f32 = rng.gen();
+            if v < config.crossover_rate {
+                // 交叉する空きがあるかチェック
+                if genes.len() - new_genes.len() < 2 {
+                    continue;
+                }
+
+                // 交叉
+                let (index1, index2) = loop {
+                    let i = Gene::select_index_random(&genes)?;
+                    let j = Gene::select_index_random(&genes)?;
+                    if i != j {
+                        break (i, j);
+                    }
+                };
+                let mut g1 = genes[index1].clone();
+                let mut g2 = genes[index2].clone();
+                Gene::crossover(&mut g1, &mut g2)?;
+                new_genes.push(g1);
+                new_genes.push(g2);
+            } else if v < (config.crossover_rate + config.mutation_rate) {
+                // 突然変異
+                let index = Gene::select_index_random(&genes)?;
+                let mut new_gene = genes[index].clone();
+                new_gene.mutation(config)?;
+                new_genes.push(new_gene);
+            } else {
+                // 選択
+                let index = Gene::select_index_roulette(&results)?;
+                new_genes.push(genes[index].clone());
+            }
+        }
+        genes = new_genes;
     }
 
     Ok(())
 }
 
-fn setup_input_data(
-    config: &config::Config,
-    mysql_cli: &DefaultClient,
-) -> MyResult<(Vec<InputData>, Vec<f64>)> {
-    let end = Utc::now().naive_utc();
-    let begin = (Utc::now() - Duration::hours(config.training_data_range_hour)).naive_utc();
-
-    let (org_x, org_y) = util::load_input_data(config, mysql_cli, begin, end)?;
-    let org_count = org_x.len();
-    if org_count < config.training_data_required_count {
-        return Err(Box::new(MyError::InputDataIsTooLittle {
-            count: org_count,
-            require: config.training_data_required_count,
-        }));
+fn find_best_model_index(models: &Vec<ForecastModel>) -> MyResult<usize> {
+    let mut best_model_index: usize = 0;
+    let mut best_mse: Option<f64> = None;
+    for (i, m) in models.iter().enumerate() {
+        let mse = m.get_performance_mse()?;
+        if best_mse.is_none() || mse < best_mse.unwrap() {
+            best_model_index = i;
+            best_mse = Some(mse);
+        }
     }
-
-    Ok((org_x, org_y))
+    Ok(best_model_index)
 }
 
 // fn load_data(
@@ -160,19 +216,6 @@ fn setup_input_data(
 //     })?;
 //     Ok((x, y))
 // }
-
-fn find_best_model_index(models: &Vec<ForecastModel>) -> MyResult<Option<usize>> {
-    let mut best_model_index: Option<usize> = None;
-    let mut best_mse: Option<f64> = None;
-    for (i, m) in models.iter().enumerate() {
-        let mse = m.get_performance_mse()?;
-        if best_mse.is_none() || mse < best_mse.unwrap() {
-            best_model_index = Some(i);
-            best_mse = Some(mse);
-        }
-    }
-    Ok(best_model_index)
-}
 
 fn save_model(mysql_cli: &DefaultClient, model: &ForecastModel) -> MyResult<()> {
     mysql_cli.with_transaction(|tx| {

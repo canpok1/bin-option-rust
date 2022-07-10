@@ -32,6 +32,9 @@ services:
     image: ghcr.io/canpok1/bin-option-rust/training-batch:latest
     environment:
       - CRON_SCHEDULE=0 0 16 * * Mon,Tue,Wed,Thu,Fri
+      - GENERATION_COUNT=3
+      - CROSSOVER_RATE=0.3
+      - MUTATION_RATE=0.001
     env_file:
       - local.env
     networks:
