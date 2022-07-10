@@ -18,6 +18,9 @@ use smartcore::{
 
 use crate::error::{MyError, MyResult};
 
+pub type InputData = Vec<f64>;
+pub type FeatureData = Vec<f64>;
+
 #[derive(Debug, Clone)]
 pub struct RateForTraining {
     pub pair: String,
@@ -302,7 +305,7 @@ impl ForecastModel {
 
     pub fn update_performance(
         &mut self,
-        test_x: &Vec<Vec<f64>>,
+        test_x: &Vec<FeatureData>,
         test_y: &Vec<f64>,
     ) -> MyResult<()> {
         let matrix = DenseMatrix::from_2d_vec(test_x);
@@ -325,8 +328,8 @@ impl ForecastModel {
         }
     }
 
-    pub fn predict(&self, rates: &Vec<f64>) -> MyResult<f64> {
-        let org_x: Vec<Vec<f64>> = vec![rates.clone()];
+    pub fn predict(&self, rates: &FeatureData) -> MyResult<f64> {
+        let org_x: Vec<FeatureData> = vec![rates.clone()];
         let x = DenseMatrix::from_2d_vec(&org_x);
         let y = self.predict_for_training(&x)?;
         Ok(y[0])

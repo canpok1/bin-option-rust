@@ -4,7 +4,7 @@ use common_lib::{
     batch,
     domain::{
         model::{ForecastError, ForecastResult},
-        service::Converter,
+        service::convert_to_feature,
     },
     error::MyResult,
     mysql::{
@@ -61,7 +61,6 @@ fn main() {
 }
 
 fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
-    let converter = Converter {};
     mysql_cli.with_transaction(|tx| -> MyResult<()> {
         let models = mysql_cli.select_forecast_models(tx, &config.currency_pair)?;
         let rates = mysql_cli.select_rates_for_forecast_unforecasted(tx, &config.currency_pair)?;
@@ -104,8 +103,7 @@ fn run(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
                     continue;
                 }
 
-                let features =
-                    converter.convert_to_features(&rate.histories, &model.get_feature_params()?)?;
+                let features = convert_to_feature(&rate.histories, &model.get_feature_params()?)?;
 
                 let result = ForecastResult::new(
                     rate.id.to_string(),

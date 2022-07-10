@@ -23,4 +23,7 @@ pub enum MyError {
 
     #[error("unmatch feature params hash, pair:{}, model_no:{}", pair, model_no)]
     UnmatchFeatureParamsHash { pair: String, model_no: i32 },
+
+    #[error("input data is too little, count:{}, require:{}", count, require)]
+    InputDataIsTooLittle { count: usize, require: usize },
 }

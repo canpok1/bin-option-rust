@@ -1,5 +1,8 @@
 use common_lib::{
-    domain::model::{FeatureParams, ForecastModel},
+    domain::{
+        model::{FeatureData, FeatureParams, ForecastModel, InputData},
+        service::convert_to_features,
+    },
     error::MyResult,
     mysql::{self, client::Client},
 };
@@ -32,7 +35,11 @@ pub struct ModelMaker<'a> {
 impl ModelMaker<'_> {
     const PERFORMANCE_MSE_DEFAULT: f64 = 1.0;
 
-    pub fn load_existing_model(&self) -> MyResult<Option<ForecastModel>> {
+    pub fn load_existing_model(
+        &self,
+        test_x_org: &Vec<InputData>,
+        test_y: &Vec<f64>,
+    ) -> MyResult<Option<ForecastModel>> {
         let model = self.mysql_cli.with_transaction(|tx| {
             self.mysql_cli.select_forecast_model(
                 tx,
@@ -41,9 +48,11 @@ impl ModelMaker<'_> {
             )
         })?;
 
-        if let Some(m) = model {
+        if let Some(mut m) = model {
             let input_data_size = m.get_input_data_size()?;
             if input_data_size == self.config.forecast_input_size {
+                let test_x = convert_to_features(test_x_org, &m.get_feature_params()?)?;
+                m.update_performance(&test_x, test_y)?;
                 Ok(Some(m))
             } else {
                 warn!(
@@ -60,15 +69,19 @@ impl ModelMaker<'_> {
     pub fn make_new_models(
         &self,
         p: &FeatureParams,
-        train_base_x: &Vec<Vec<f64>>,
+        train_base_x_org: &Vec<InputData>,
         train_base_y: &Vec<f64>,
-        test_x: &Vec<Vec<f64>>,
+        test_x_org: &Vec<InputData>,
         test_y: &Vec<f64>,
     ) -> MyResult<Vec<ForecastModel>> {
         let mut models: Vec<ForecastModel> = vec![];
 
+        let train_base_x = convert_to_features(train_base_x_org, p)?;
+        let test_x = convert_to_features(test_x_org, p)?;
+
         for index in 1..=self.config.training_count {
-            let (train_x, _, train_y, _) = util::train_test_split(train_base_x, train_base_y, 0.2)?;
+            let (train_x, _, train_y, _) =
+                util::train_test_split(&train_base_x, train_base_y, 0.2)?;
 
             debug!("training[{:2}] RandomForest ...", index);
             models.push(self.make_random_forest(&p, &train_x, &train_y, &test_x, &test_y)?);
@@ -102,9 +115,9 @@ impl ModelMaker<'_> {
     fn make_random_forest(
         &self,
         params: &FeatureParams,
-        train_x: &Vec<Vec<f64>>,
+        train_x: &Vec<FeatureData>,
         train_y: &Vec<f64>,
-        test_x: &Vec<Vec<f64>>,
+        test_x: &Vec<FeatureData>,
         test_y: &Vec<f64>,
     ) -> MyResult<ForecastModel> {
         let matrix = DenseMatrix::from_2d_vec(&train_x);
@@ -126,9 +139,9 @@ impl ModelMaker<'_> {
     fn make_knn(
         &self,
         params: &FeatureParams,
-        train_x: &Vec<Vec<f64>>,
+        train_x: &Vec<FeatureData>,
         train_y: &Vec<f64>,
-        test_x: &Vec<Vec<f64>>,
+        test_x: &Vec<FeatureData>,
         test_y: &Vec<f64>,
     ) -> MyResult<ForecastModel> {
         let matrix = DenseMatrix::from_2d_vec(&train_x);
@@ -155,9 +168,9 @@ impl ModelMaker<'_> {
     fn make_linear(
         &self,
         params: &FeatureParams,
-        train_x: &Vec<Vec<f64>>,
+        train_x: &Vec<FeatureData>,
         train_y: &Vec<f64>,
-        test_x: &Vec<Vec<f64>>,
+        test_x: &Vec<FeatureData>,
         test_y: &Vec<f64>,
     ) -> MyResult<ForecastModel> {
         let matrix = DenseMatrix::from_2d_vec(&train_x);
@@ -180,9 +193,9 @@ impl ModelMaker<'_> {
     fn make_ridge(
         &self,
         params: &FeatureParams,
-        train_x: &Vec<Vec<f64>>,
+        train_x: &Vec<FeatureData>,
         train_y: &Vec<f64>,
-        test_x: &Vec<Vec<f64>>,
+        test_x: &Vec<FeatureData>,
         test_y: &Vec<f64>,
     ) -> MyResult<ForecastModel> {
         let matrix = DenseMatrix::from_2d_vec(&train_x);
@@ -209,9 +222,9 @@ impl ModelMaker<'_> {
     fn make_lasso(
         &self,
         params: &FeatureParams,
-        train_x: &Vec<Vec<f64>>,
+        train_x: &Vec<FeatureData>,
         train_y: &Vec<f64>,
-        test_x: &Vec<Vec<f64>>,
+        test_x: &Vec<FeatureData>,
         test_y: &Vec<f64>,
     ) -> MyResult<ForecastModel> {
         let matrix = DenseMatrix::from_2d_vec(&train_x);
@@ -238,9 +251,9 @@ impl ModelMaker<'_> {
     fn make_elastic_net(
         &self,
         params: &FeatureParams,
-        train_x: &Vec<Vec<f64>>,
+        train_x: &Vec<FeatureData>,
         train_y: &Vec<f64>,
-        test_x: &Vec<Vec<f64>>,
+        test_x: &Vec<FeatureData>,
         test_y: &Vec<f64>,
     ) -> MyResult<ForecastModel> {
         let matrix = DenseMatrix::from_2d_vec(&train_x);
@@ -268,7 +281,7 @@ impl ModelMaker<'_> {
 
     // fn make_ligistic(
     //     params: &FeatureParams,
-    //     train_x: &Vec<Vec<f64>>,
+    //     train_x: &Vec<FeatureData>,
     //     train_y: &Vec<f64>,
     //     config: &Config,
     // ) -> MyResult<ForecastModel> {
@@ -289,9 +302,9 @@ impl ModelMaker<'_> {
     fn make_svr(
         &self,
         params: &FeatureParams,
-        train_x: &Vec<Vec<f64>>,
+        train_x: &Vec<FeatureData>,
         train_y: &Vec<f64>,
-        test_x: &Vec<Vec<f64>>,
+        test_x: &Vec<FeatureData>,
         test_y: &Vec<f64>,
     ) -> MyResult<ForecastModel> {
         let matrix = DenseMatrix::from_2d_vec(&train_x);
