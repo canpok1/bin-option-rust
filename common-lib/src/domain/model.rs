@@ -87,6 +87,7 @@ pub enum ForecastModel {
         model: RandomForestRegressor<f64>,
         input_data_size: usize,
         feature_params: FeatureParams,
+        performance_mse: f64,
         memo: String,
     },
     KNN {
@@ -95,6 +96,7 @@ pub enum ForecastModel {
         model: KNNRegressor<f64, euclidian::Euclidian>,
         input_data_size: usize,
         feature_params: FeatureParams,
+        performance_mse: f64,
         memo: String,
     },
     Linear {
@@ -103,6 +105,7 @@ pub enum ForecastModel {
         model: LinearRegression<f64, DenseMatrix<f64>>,
         input_data_size: usize,
         feature_params: FeatureParams,
+        performance_mse: f64,
         memo: String,
     },
     Ridge {
@@ -111,6 +114,7 @@ pub enum ForecastModel {
         model: RidgeRegression<f64, DenseMatrix<f64>>,
         input_data_size: usize,
         feature_params: FeatureParams,
+        performance_mse: f64,
         memo: String,
     },
     LASSO {
@@ -119,6 +123,7 @@ pub enum ForecastModel {
         model: Lasso<f64, DenseMatrix<f64>>,
         input_data_size: usize,
         feature_params: FeatureParams,
+        performance_mse: f64,
         memo: String,
     },
     ElasticNet {
@@ -127,6 +132,7 @@ pub enum ForecastModel {
         model: ElasticNet<f64, DenseMatrix<f64>>,
         input_data_size: usize,
         feature_params: FeatureParams,
+        performance_mse: f64,
         memo: String,
     },
     Logistic {
@@ -135,6 +141,7 @@ pub enum ForecastModel {
         model: LogisticRegression<f64, DenseMatrix<f64>>,
         input_data_size: usize,
         feature_params: FeatureParams,
+        performance_mse: f64,
         memo: String,
     },
     SVR {
@@ -143,6 +150,7 @@ pub enum ForecastModel {
         model: SVR<f64, DenseMatrix<f64>, RBFKernel<f64>>,
         input_data_size: usize,
         feature_params: FeatureParams,
+        performance_mse: f64,
         memo: String,
     },
 }
@@ -150,346 +158,157 @@ pub enum ForecastModel {
 impl ForecastModel {
     pub fn get_pair(&self) -> MyResult<String> {
         match self {
-            ForecastModel::RandomForest {
-                pair,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(pair.to_string()),
-            ForecastModel::KNN {
-                pair,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(pair.to_string()),
-            ForecastModel::Linear {
-                pair,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(pair.to_string()),
-            ForecastModel::Ridge {
-                pair,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(pair.to_string()),
-            ForecastModel::LASSO {
-                pair,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(pair.to_string()),
-            ForecastModel::ElasticNet {
-                pair,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(pair.to_string()),
-            ForecastModel::Logistic {
-                pair,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(pair.to_string()),
-            ForecastModel::SVR {
-                pair,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(pair.to_string()),
+            ForecastModel::RandomForest { pair, .. } => Ok(pair.to_string()),
+            ForecastModel::KNN { pair, .. } => Ok(pair.to_string()),
+            ForecastModel::Linear { pair, .. } => Ok(pair.to_string()),
+            ForecastModel::Ridge { pair, .. } => Ok(pair.to_string()),
+            ForecastModel::LASSO { pair, .. } => Ok(pair.to_string()),
+            ForecastModel::ElasticNet { pair, .. } => Ok(pair.to_string()),
+            ForecastModel::Logistic { pair, .. } => Ok(pair.to_string()),
+            ForecastModel::SVR { pair, .. } => Ok(pair.to_string()),
         }
     }
 
     pub fn get_no(&self) -> MyResult<i32> {
         match self {
-            ForecastModel::RandomForest {
-                pair: _,
-                no,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(*no),
-            ForecastModel::KNN {
-                pair: _,
-                no,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(*no),
-            ForecastModel::Linear {
-                pair: _,
-                no,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(*no),
-            ForecastModel::Ridge {
-                pair: _,
-                no,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(*no),
-            ForecastModel::LASSO {
-                pair: _,
-                no,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(*no),
-            ForecastModel::ElasticNet {
-                pair: _,
-                no,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(*no),
-            ForecastModel::Logistic {
-                pair: _,
-                no,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(*no),
-            ForecastModel::SVR {
-                pair: _,
-                no,
-                model: _,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(*no),
+            ForecastModel::RandomForest { no, .. } => Ok(*no),
+            ForecastModel::KNN { no, .. } => Ok(*no),
+            ForecastModel::Linear { no, .. } => Ok(*no),
+            ForecastModel::Ridge { no, .. } => Ok(*no),
+            ForecastModel::LASSO { no, .. } => Ok(*no),
+            ForecastModel::ElasticNet { no, .. } => Ok(*no),
+            ForecastModel::Logistic { no, .. } => Ok(*no),
+            ForecastModel::SVR { no, .. } => Ok(*no),
         }
     }
 
     pub fn get_input_data_size(&self) -> MyResult<usize> {
         match self {
             ForecastModel::RandomForest {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size,
-                feature_params: _,
-                memo: _,
+                input_data_size, ..
             } => Ok(*input_data_size),
             ForecastModel::KNN {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size,
-                feature_params: _,
-                memo: _,
+                input_data_size, ..
             } => Ok(*input_data_size),
             ForecastModel::Linear {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size,
-                feature_params: _,
-                memo: _,
+                input_data_size, ..
             } => Ok(*input_data_size),
             ForecastModel::Ridge {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size,
-                feature_params: _,
-                memo: _,
+                input_data_size, ..
             } => Ok(*input_data_size),
             ForecastModel::LASSO {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size,
-                feature_params: _,
-                memo: _,
+                input_data_size, ..
             } => Ok(*input_data_size),
             ForecastModel::ElasticNet {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size,
-                feature_params: _,
-                memo: _,
+                input_data_size, ..
             } => Ok(*input_data_size),
             ForecastModel::Logistic {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size,
-                feature_params: _,
-                memo: _,
+                input_data_size, ..
             } => Ok(*input_data_size),
             ForecastModel::SVR {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size,
-                feature_params: _,
-                memo: _,
+                input_data_size, ..
             } => Ok(*input_data_size),
         }
     }
 
     pub fn get_feature_params(&self) -> MyResult<FeatureParams> {
         match self {
-            ForecastModel::RandomForest {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params,
-                memo: _,
-            } => Ok(feature_params.clone()),
-            ForecastModel::KNN {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params,
-                memo: _,
-            } => Ok(feature_params.clone()),
-            ForecastModel::Linear {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params,
-                memo: _,
-            } => Ok(feature_params.clone()),
-            ForecastModel::Ridge {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params,
-                memo: _,
-            } => Ok(feature_params.clone()),
-            ForecastModel::LASSO {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params,
-                memo: _,
-            } => Ok(feature_params.clone()),
-            ForecastModel::ElasticNet {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params,
-                memo: _,
-            } => Ok(feature_params.clone()),
-            ForecastModel::Logistic {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params,
-                memo: _,
-            } => Ok(feature_params.clone()),
-            ForecastModel::SVR {
-                pair: _,
-                no: _,
-                model: _,
-                input_data_size: _,
-                feature_params,
-                memo: _,
-            } => Ok(feature_params.clone()),
+            ForecastModel::RandomForest { feature_params, .. } => Ok(feature_params.clone()),
+            ForecastModel::KNN { feature_params, .. } => Ok(feature_params.clone()),
+            ForecastModel::Linear { feature_params, .. } => Ok(feature_params.clone()),
+            ForecastModel::Ridge { feature_params, .. } => Ok(feature_params.clone()),
+            ForecastModel::LASSO { feature_params, .. } => Ok(feature_params.clone()),
+            ForecastModel::ElasticNet { feature_params, .. } => Ok(feature_params.clone()),
+            ForecastModel::Logistic { feature_params, .. } => Ok(feature_params.clone()),
+            ForecastModel::SVR { feature_params, .. } => Ok(feature_params.clone()),
         }
+    }
+
+    pub fn get_performance_mse(&self) -> MyResult<f64> {
+        match self {
+            ForecastModel::RandomForest {
+                performance_mse, ..
+            } => Ok(*performance_mse),
+            ForecastModel::KNN {
+                performance_mse, ..
+            } => Ok(*performance_mse),
+            ForecastModel::Linear {
+                performance_mse, ..
+            } => Ok(*performance_mse),
+            ForecastModel::Ridge {
+                performance_mse, ..
+            } => Ok(*performance_mse),
+            ForecastModel::LASSO {
+                performance_mse, ..
+            } => Ok(*performance_mse),
+            ForecastModel::ElasticNet {
+                performance_mse, ..
+            } => Ok(*performance_mse),
+            ForecastModel::Logistic {
+                performance_mse, ..
+            } => Ok(*performance_mse),
+            ForecastModel::SVR {
+                performance_mse, ..
+            } => Ok(*performance_mse),
+        }
+    }
+
+    pub fn set_performance_mse(&mut self, v: f64) -> MyResult<()> {
+        match self {
+            ForecastModel::RandomForest {
+                performance_mse, ..
+            } => {
+                *performance_mse = v;
+            }
+            ForecastModel::KNN {
+                performance_mse, ..
+            } => {
+                *performance_mse = v;
+            }
+            ForecastModel::Linear {
+                performance_mse, ..
+            } => {
+                *performance_mse = v;
+            }
+            ForecastModel::Ridge {
+                performance_mse, ..
+            } => {
+                *performance_mse = v;
+            }
+            ForecastModel::LASSO {
+                performance_mse, ..
+            } => {
+                *performance_mse = v;
+            }
+            ForecastModel::ElasticNet {
+                performance_mse, ..
+            } => {
+                *performance_mse = v;
+            }
+            ForecastModel::Logistic {
+                performance_mse, ..
+            } => {
+                *performance_mse = v;
+            }
+            ForecastModel::SVR {
+                performance_mse, ..
+            } => {
+                *performance_mse = v;
+            }
+        }
+        Ok(())
     }
 
     pub fn predict_for_training(&self, x: &DenseMatrix<f64>) -> MyResult<Vec<f64>> {
         match self {
-            ForecastModel::RandomForest {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(model.predict(x)?),
-            ForecastModel::KNN {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(model.predict(x)?),
-            ForecastModel::Linear {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(model.predict(x)?),
-            ForecastModel::Ridge {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(model.predict(x)?),
-            ForecastModel::LASSO {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(model.predict(x)?),
-            ForecastModel::ElasticNet {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(model.predict(x)?),
-            ForecastModel::Logistic {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(model.predict(x)?),
-            ForecastModel::SVR {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(model.predict(x)?),
+            ForecastModel::RandomForest { model, .. } => Ok(model.predict(x)?),
+            ForecastModel::KNN { model, .. } => Ok(model.predict(x)?),
+            ForecastModel::Linear { model, .. } => Ok(model.predict(x)?),
+            ForecastModel::Ridge { model, .. } => Ok(model.predict(x)?),
+            ForecastModel::LASSO { model, .. } => Ok(model.predict(x)?),
+            ForecastModel::ElasticNet { model, .. } => Ok(model.predict(x)?),
+            ForecastModel::Logistic { model, .. } => Ok(model.predict(x)?),
+            ForecastModel::SVR { model, .. } => Ok(model.predict(x)?),
         }
     }
 
@@ -502,70 +321,14 @@ impl ForecastModel {
 
     pub fn serialize_model_data(&self) -> MyResult<Vec<u8>> {
         match self {
-            ForecastModel::RandomForest {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(bincode::serialize(&model)?),
-            ForecastModel::KNN {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(bincode::serialize(&model)?),
-            ForecastModel::Linear {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(bincode::serialize(&model)?),
-            ForecastModel::Ridge {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(bincode::serialize(&model)?),
-            ForecastModel::LASSO {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(bincode::serialize(&model)?),
-            ForecastModel::ElasticNet {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(bincode::serialize(&model)?),
-            ForecastModel::Logistic {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(bincode::serialize(&model)?),
-            ForecastModel::SVR {
-                pair: _,
-                no: _,
-                model,
-                input_data_size: _,
-                feature_params: _,
-                memo: _,
-            } => Ok(bincode::serialize(&model)?),
+            ForecastModel::RandomForest { model, .. } => Ok(bincode::serialize(&model)?),
+            ForecastModel::KNN { model, .. } => Ok(bincode::serialize(&model)?),
+            ForecastModel::Linear { model, .. } => Ok(bincode::serialize(&model)?),
+            ForecastModel::Ridge { model, .. } => Ok(bincode::serialize(&model)?),
+            ForecastModel::LASSO { model, .. } => Ok(bincode::serialize(&model)?),
+            ForecastModel::ElasticNet { model, .. } => Ok(bincode::serialize(&model)?),
+            ForecastModel::Logistic { model, .. } => Ok(bincode::serialize(&model)?),
+            ForecastModel::SVR { model, .. } => Ok(bincode::serialize(&model)?),
         }
     }
 }
@@ -576,10 +339,9 @@ impl fmt::Display for ForecastModel {
             ForecastModel::RandomForest {
                 pair,
                 no,
-                model: _,
-                input_data_size: _,
                 feature_params,
                 memo,
+                ..
             } => {
                 write!(
                     f,
@@ -590,10 +352,9 @@ impl fmt::Display for ForecastModel {
             ForecastModel::KNN {
                 pair,
                 no,
-                model: _,
-                input_data_size: _,
                 feature_params,
                 memo,
+                ..
             } => {
                 write!(
                     f,
@@ -604,10 +365,9 @@ impl fmt::Display for ForecastModel {
             ForecastModel::Linear {
                 pair,
                 no,
-                model: _,
-                input_data_size: _,
                 feature_params,
                 memo,
+                ..
             } => {
                 write!(
                     f,
@@ -618,10 +378,9 @@ impl fmt::Display for ForecastModel {
             ForecastModel::Ridge {
                 pair,
                 no,
-                model: _,
-                input_data_size: _,
                 feature_params,
                 memo,
+                ..
             } => {
                 write!(
                     f,
@@ -632,10 +391,9 @@ impl fmt::Display for ForecastModel {
             ForecastModel::LASSO {
                 pair,
                 no,
-                model: _,
-                input_data_size: _,
                 feature_params,
                 memo,
+                ..
             } => {
                 write!(
                     f,
@@ -646,10 +404,9 @@ impl fmt::Display for ForecastModel {
             ForecastModel::ElasticNet {
                 pair,
                 no,
-                model: _,
-                input_data_size: _,
                 feature_params,
                 memo,
+                ..
             } => {
                 write!(
                     f,
@@ -660,10 +417,9 @@ impl fmt::Display for ForecastModel {
             ForecastModel::Logistic {
                 pair,
                 no,
-                model: _,
-                input_data_size: _,
                 feature_params,
                 memo,
+                ..
             } => {
                 write!(
                     f,
@@ -674,10 +430,9 @@ impl fmt::Display for ForecastModel {
             ForecastModel::SVR {
                 pair,
                 no,
-                model: _,
-                input_data_size: _,
                 feature_params,
                 memo,
+                ..
             } => {
                 write!(
                     f,

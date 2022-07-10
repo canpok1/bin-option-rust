@@ -258,15 +258,16 @@ impl Client for DefaultClient {
         let q = format!(
             r#"
                 INSERT INTO {}
-                    (pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, memo)
+                    (pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo)
                 VALUES
-                    (:pair, :no, :type, :data, :input_data_size, :feature_params, :feature_params_hash, :memo)
+                    (:pair, :no, :type, :data, :input_data_size, :feature_params, :feature_params_hash, :performance_mse, :memo)
                 ON DUPLICATE KEY UPDATE
                     model_type = :type,
                     model_data = :data,
                     input_data_size = :input_data_size,
                     feature_params = :feature_params,
                     feature_params_hash = :feature_params_hash,
+                    performance_mse = :performance_mse,
                     memo = :memo;
             "#,
             TABLE_NAME_FORECAST_MODEL
@@ -275,10 +276,11 @@ impl Client for DefaultClient {
             ForecastModel::RandomForest {
                 pair,
                 no,
-                model: _,
                 input_data_size,
                 feature_params,
+                performance_mse,
                 memo,
+                ..
             } => {
                 params! {
                     "pair" => pair,
@@ -288,16 +290,18 @@ impl Client for DefaultClient {
                     "input_data_size" => input_data_size,
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
+                    "performance_mse" => performance_mse,
                     "memo" => memo,
                 }
             }
             ForecastModel::KNN {
                 pair,
                 no,
-                model: _,
                 input_data_size,
                 feature_params,
+                performance_mse,
                 memo,
+                ..
             } => {
                 params! {
                     "pair" => pair,
@@ -307,16 +311,18 @@ impl Client for DefaultClient {
                     "input_data_size" => input_data_size,
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
+                    "performance_mse" => performance_mse,
                     "memo" => memo,
                 }
             }
             ForecastModel::Linear {
                 pair,
                 no,
-                model: _,
                 input_data_size,
                 feature_params,
+                performance_mse,
                 memo,
+                ..
             } => {
                 params! {
                     "pair" => pair,
@@ -326,16 +332,18 @@ impl Client for DefaultClient {
                     "input_data_size" => input_data_size,
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
+                    "performance_mse" => performance_mse,
                     "memo" => memo,
                 }
             }
             ForecastModel::Ridge {
                 pair,
                 no,
-                model: _,
                 input_data_size,
                 feature_params,
+                performance_mse,
                 memo,
+                ..
             } => {
                 params! {
                     "pair" => pair,
@@ -345,16 +353,18 @@ impl Client for DefaultClient {
                     "input_data_size" => input_data_size,
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
+                    "performance_mse" => performance_mse,
                     "memo" => memo,
                 }
             }
             ForecastModel::LASSO {
                 pair,
                 no,
-                model: _,
                 input_data_size,
                 feature_params,
+                performance_mse,
                 memo,
+                ..
             } => {
                 params! {
                     "pair" => pair,
@@ -364,16 +374,18 @@ impl Client for DefaultClient {
                     "input_data_size" => input_data_size,
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
+                    "performance_mse" => performance_mse,
                     "memo" => memo,
                 }
             }
             ForecastModel::ElasticNet {
                 pair,
                 no,
-                model: _,
                 input_data_size,
                 feature_params,
+                performance_mse,
                 memo,
+                ..
             } => {
                 params! {
                     "pair" => pair,
@@ -383,16 +395,18 @@ impl Client for DefaultClient {
                     "input_data_size" => input_data_size,
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
+                    "performance_mse" => performance_mse,
                     "memo" => memo,
                 }
             }
             ForecastModel::Logistic {
                 pair,
                 no,
-                model: _,
                 input_data_size,
                 feature_params,
+                performance_mse,
                 memo,
+                ..
             } => {
                 params! {
                     "pair" => pair,
@@ -402,16 +416,18 @@ impl Client for DefaultClient {
                     "input_data_size" => input_data_size,
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
+                    "performance_mse" => performance_mse,
                     "memo" => memo,
                 }
             }
             ForecastModel::SVR {
                 pair,
                 no,
-                model: _,
                 input_data_size,
                 feature_params,
+                performance_mse,
                 memo,
+                ..
             } => {
                 params! {
                     "pair" => pair,
@@ -421,6 +437,7 @@ impl Client for DefaultClient {
                     "input_data_size" => input_data_size,
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
+                    "performance_mse" => performance_mse,
                     "memo" => memo,
                 }
             }
@@ -441,7 +458,7 @@ impl Client for DefaultClient {
         let q = format!(
             r#"
                 SELECT
-                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, memo, created_at, updated_at
+                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo, created_at, updated_at
                 FROM {}
                 WHERE
                     pair = :pair AND model_no = :no;
@@ -462,6 +479,7 @@ impl Client for DefaultClient {
             input_data_size,
             feature_params_raw,
             feature_params_hash,
+            performance_mse,
             memo,
             created_at,
             updated_at,
@@ -477,6 +495,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params: feature_params_value.to_domain()?,
                 feature_params_hash,
+                performance_mse,
                 memo,
                 created_at,
                 updated_at,
@@ -499,7 +518,7 @@ impl Client for DefaultClient {
         let q = format!(
             r#"
                 SELECT
-                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, memo, created_at, updated_at
+                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo, created_at, updated_at
                 FROM {}
                 WHERE
                     pair = :pair
@@ -523,6 +542,7 @@ impl Client for DefaultClient {
                     input_data_size,
                     feature_params_raw,
                     feature_params_hash,
+                    performance_mse,
                     memo,
                     created_at,
                     updated_at,
@@ -537,6 +557,7 @@ impl Client for DefaultClient {
                     input_data_size,
                     feature_params: feature_params_value.to_domain()?,
                     feature_params_hash,
+                    performance_mse,
                     memo,
                     created_at,
                     updated_at,
