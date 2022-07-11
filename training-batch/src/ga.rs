@@ -19,6 +19,7 @@ impl Gene {
         values.push(p.fast_period);
         values.push(p.slow_period);
         values.push(p.signal_period);
+        values.push(p.bb_period);
         Ok(Gene { values })
     }
 
@@ -26,6 +27,7 @@ impl Gene {
         let mut rng = rand::thread_rng();
         Ok(Gene {
             values: vec![
+                rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
                 rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
                 rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
                 rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
@@ -39,6 +41,7 @@ impl Gene {
             fast_period: self.values[0],
             slow_period: self.values[1],
             signal_period: self.values[2],
+            bb_period: self.values[3],
         })
     }
 

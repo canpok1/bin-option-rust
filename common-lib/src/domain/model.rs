@@ -61,6 +61,7 @@ pub struct FeatureParams {
     pub fast_period: usize,
     pub slow_period: usize,
     pub signal_period: usize,
+    pub bb_period: usize,
 }
 
 impl FeatureParams {
@@ -70,6 +71,7 @@ impl FeatureParams {
             fast_period: 3,
             slow_period: 6,
             signal_period: 4,
+            bb_period: 3,
         }
     }
 

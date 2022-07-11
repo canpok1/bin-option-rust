@@ -148,6 +148,7 @@ pub struct FeatureParamsValue {
     pub fast_period: Option<usize>,
     pub slow_period: Option<usize>,
     pub signal_period: Option<usize>,
+    pub bb_period: Option<usize>,
 }
 
 impl FeatureParamsValue {
@@ -165,6 +166,9 @@ impl FeatureParamsValue {
         }
         if let Some(v) = self.signal_period {
             m.signal_period = v;
+        }
+        if let Some(v) = self.bb_period {
+            m.bb_period = v;
         }
 
         Ok(m)
