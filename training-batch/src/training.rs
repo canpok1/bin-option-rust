@@ -102,78 +102,113 @@ impl ModelMaker<'_> {
                 util::train_test_split(&train_base_x, self.train_base_y, 0.2)?;
 
             debug!("training[{:2}] RandomForest ...", index);
-            models.push(self.make_random_forest(
+            match self.make_random_forest(
                 model_no,
                 &params,
                 &train_x,
                 &train_y,
                 &test_x,
                 &self.test_y,
-            )?);
+            ) {
+                Ok(m) => {
+                    models.push(m);
+                }
+                Err(err) => {
+                    warn!(
+                        "training[{:2}] skip RandomForest, error occured. error:{}",
+                        index, err
+                    );
+                }
+            }
 
             debug!("training[{:2}] KNN ...", index);
-            models.push(self.make_knn(
-                model_no,
-                &params,
-                &train_x,
-                &train_y,
-                &test_x,
-                &self.test_y,
-            )?);
+            match self.make_knn(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
+                Ok(m) => {
+                    models.push(m);
+                }
+                Err(err) => {
+                    warn!(
+                        "training[{:2}] skip KNN, error occured. error:{}",
+                        index, err
+                    );
+                }
+            }
 
             debug!("training[{:2}] Linear ...", index);
-            models.push(self.make_linear(
-                model_no,
-                &params,
-                &train_x,
-                &train_y,
-                &test_x,
-                &self.test_y,
-            )?);
+            match self.make_linear(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
+                Ok(m) => {
+                    models.push(m);
+                }
+                Err(err) => {
+                    warn!(
+                        "training[{:2}] skip Linear, error occured. error:{}",
+                        index, err
+                    );
+                }
+            }
 
             debug!("training[{:2}] Ridge ...", index);
-            models.push(self.make_ridge(
-                model_no,
-                &params,
-                &train_x,
-                &train_y,
-                &test_x,
-                &self.test_y,
-            )?);
+            match self.make_ridge(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
+                Ok(m) => {
+                    models.push(m);
+                }
+                Err(err) => {
+                    warn!(
+                        "training[{:2}] skip Ridge, error occured. error:{}",
+                        index, err
+                    );
+                }
+            }
 
             debug!("training[{:2}] LASSO ...", index);
-            models.push(self.make_lasso(
-                model_no,
-                &params,
-                &train_x,
-                &train_y,
-                &test_x,
-                &self.test_y,
-            )?);
+            match self.make_lasso(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
+                Ok(m) => {
+                    models.push(m);
+                }
+                Err(err) => {
+                    warn!(
+                        "training[{:2}] skip LASSO, error occured. error:{}",
+                        index, err
+                    );
+                }
+            }
 
             debug!("training[{:2}] ElasticNet ...", index);
-            models.push(self.make_elastic_net(
+            match self.make_elastic_net(
                 model_no,
                 &params,
                 &train_x,
                 &train_y,
                 &test_x,
                 &self.test_y,
-            )?);
+            ) {
+                Ok(m) => {
+                    models.push(m);
+                }
+                Err(err) => {
+                    warn!(
+                        "training[{:2}] skip ElasticNet, error occured. error:{}",
+                        index, err
+                    );
+                }
+            }
 
             //  学習が終わらなかったためコメントアウト
             //  debug!("training[{:2}] Logistic ...", index);
             //  models.push(make_elastic_net(&p, &train_x, &train_y, config)?);
 
             debug!("training[{:2}] SVR ...", index);
-            models.push(self.make_svr(
-                model_no,
-                &params,
-                &train_x,
-                &train_y,
-                &test_x,
-                &self.test_y,
-            )?);
+            match self.make_svr(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
+                Ok(m) => {
+                    models.push(m);
+                }
+                Err(err) => {
+                    warn!(
+                        "training[{:2}] skip SVR, error occured. error:{}",
+                        index, err
+                    );
+                }
+            }
         }
 
         Ok(models)

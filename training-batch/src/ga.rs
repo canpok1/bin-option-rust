@@ -1,3 +1,5 @@
+use std::cmp;
+
 use common_lib::{domain::model::FeatureParams, error::MyResult};
 use rand::Rng;
 
@@ -10,6 +12,7 @@ pub struct Gene {
 
 impl Gene {
     const FEATURE_SIZE: usize = 10;
+    const MIN_VALUE: usize = 2;
 
     pub fn new(p: &FeatureParams) -> MyResult<Gene> {
         let mut values = vec![];
@@ -23,9 +26,9 @@ impl Gene {
         let mut rng = rand::thread_rng();
         Ok(Gene {
             values: vec![
-                rng.gen_range(1..=config.forecast_input_size),
-                rng.gen_range(1..=config.forecast_input_size),
-                rng.gen_range(1..=config.forecast_input_size),
+                rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
+                rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
+                rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
             ],
         })
     }
@@ -42,7 +45,7 @@ impl Gene {
     pub fn mutation(&mut self, config: &config::Config) -> MyResult<()> {
         let mut rng = rand::thread_rng();
         let index = rng.gen_range(0..self.values.len());
-        self.values[index] = rng.gen_range(1..=config.forecast_input_size);
+        self.values[index] = rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size);
         Ok(())
     }
 
@@ -73,15 +76,21 @@ impl Gene {
         Ok(index)
     }
 
-    pub fn crossover(g1: &mut Self, g2: &mut Self) -> MyResult<()> {
+    pub fn crossover(g1: &mut Self, g2: &mut Self, max: usize) -> MyResult<()> {
         let mut rng = rand::thread_rng();
         let index = rng.gen_range(0..g1.values.len());
         let mask = 3 << rng.gen_range(0..3);
 
         let tmp1 = g1.values[index] & mask;
         let tmp2 = g2.values[index] & mask;
+
         g1.values[index] = (g1.values[index] & !mask) | tmp2;
+        g1.values[index] = cmp::min(g1.values[index], max);
+        g1.values[index] = cmp::max(g1.values[index], Self::MIN_VALUE);
+
         g2.values[index] = (g2.values[index] & !mask) | tmp1;
+        g2.values[index] = cmp::min(g2.values[index], max);
+        g2.values[index] = cmp::max(g2.values[index], Self::MIN_VALUE);
         Ok(())
     }
 }

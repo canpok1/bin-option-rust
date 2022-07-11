@@ -7,6 +7,12 @@ pub fn start_scheduler<F>(cron_schedule: &str, f: F) -> MyResult<()>
 where
     F: Fn(),
 {
+    if cron_schedule.is_empty() {
+        info!("run onece only, cron schedule is empty");
+        f();
+        return Ok(());
+    }
+
     let mut sched = JobScheduler::new();
 
     info!("set cron schedule: {}", cron_schedule);

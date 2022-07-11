@@ -35,6 +35,7 @@ services:
       - GENERATION_COUNT=3
       - CROSSOVER_RATE=0.3
       - MUTATION_RATE=0.001
+      - FORECAST_MODEL_COUNT=10
     env_file:
       - local.env
     networks:

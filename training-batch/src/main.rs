@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use common_lib::{
     batch,
     domain::model::ForecastModel,
@@ -77,30 +79,72 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         test_y: &test_y,
     };
 
-    let mut genes: Vec<Gene> = vec![
-        Gene::new_random_gene(config)?,
-        Gene::new_random_gene(config)?,
-        Gene::new_random_gene(config)?,
-        Gene::new_random_gene(config)?,
-    ];
+    let mut genes: Vec<Gene> = vec![];
+    if let Some(m) = maker.load_existing_model(config.forecast_model_no)? {
+        let p = m.get_feature_params()?;
+        let gene = Gene::new(&p)?;
+        genes.push(gene);
+        info!("loaded existing data, {:?}", p);
+    }
+
+    let genes_count = genes.len() as i32;
+    for _ in 0..(config.forecast_model_count - genes_count) {
+        genes.push(Gene::new_random_gene(config)?);
+    }
+
+    let genes_count = genes.len() as i32;
     for gen_count in 1..=config.generation_count {
-        info!("generation[{}] start", gen_count);
+        info!(
+            "generation[{:<03}/{:<03}] start",
+            gen_count, config.generation_count
+        );
 
-        let mut results: Vec<f64> = vec![];
+        let mut models: Vec<Vec<ForecastModel>> = vec![];
         for (i, gene) in genes.iter().enumerate() {
-            info!("generation[{}] gene[{}] processing ...", gen_count, i);
-
             let p = gene.to_feature_params()?;
-            let model_no = config.forecast_model_no + i as i32;
 
-            let models = maker.make_new_models(model_no, &p)?;
+            info!(
+                "generation[{:<03}/{:<03}] gene[{:<02}/{:<02}] processing ... {:?}",
+                gen_count,
+                config.generation_count,
+                i + 1,
+                genes_count,
+                p
+            );
+
+            models.push(maker.make_new_models(config.forecast_model_no, &p)?);
+        }
+
+        let mut best_model: Option<&ForecastModel> = None;
+        let mut results: Vec<f64> = vec![];
+        for models in models.iter() {
             let index = find_best_model_index(&models)?;
-            if let Some(best_model) = models.get(index) {
-                results.push(best_model.get_performance_mse()?);
-                save_model(mysql_cli, best_model)?;
+            if let Some(m) = models.get(index) {
+                let mse = m.get_performance_mse()?;
+                results.push(mse);
+                if let Some(m2) = best_model {
+                    if m2.get_performance_mse()? > mse {
+                        best_model = Some(m);
+                    }
+                } else {
+                    best_model = Some(m);
+                }
             }
         }
-        info!("generation[{}] result: {:?}", gen_count, results);
+        info!(
+            "generation[{:<03}/{:<03}] result: {:?}",
+            gen_count, config.generation_count, results
+        );
+
+        if let Some(m) = best_model {
+            info!(
+                "generation[{:<03}/{:<03}] best_result: {}",
+                gen_count,
+                config.generation_count,
+                m.get_performance_mse()?,
+            );
+            save_model(mysql_cli, m)?;
+        }
 
         if gen_count == config.generation_count {
             break;
@@ -108,6 +152,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
 
         // 次世代を生成
         let mut new_genes: Vec<Gene> = vec![];
+        let mut selected: HashSet<usize> = HashSet::new();
         while new_genes.len() < genes.len() {
             let mut rng = rand::thread_rng();
             let v: f32 = rng.gen();
@@ -127,7 +172,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
                 };
                 let mut g1 = genes[index1].clone();
                 let mut g2 = genes[index2].clone();
-                Gene::crossover(&mut g1, &mut g2)?;
+                Gene::crossover(&mut g1, &mut g2, config.forecast_input_size)?;
                 new_genes.push(g1);
                 new_genes.push(g2);
             } else if v < (config.crossover_rate + config.mutation_rate) {
@@ -138,8 +183,16 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
                 new_genes.push(new_gene);
             } else {
                 // 選択
-                let index = Gene::select_index_roulette(&results)?;
-                new_genes.push(genes[index].clone());
+                if selected.len() < genes.len() {
+                    let index = loop {
+                        let i = Gene::select_index_roulette(&results)?;
+                        if !selected.contains(&i) {
+                            break i;
+                        }
+                    };
+                    new_genes.push(genes[index].clone());
+                    selected.insert(index);
+                }
             }
         }
         genes = new_genes;
