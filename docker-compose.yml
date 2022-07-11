@@ -8,7 +8,7 @@ services:
     volumes:
       - ./build/ddl:/flyway/sql
     env_file:
-      - local.env
+      - config/local.env
     networks:
       - trading-bot-network
   rate-gateway:
@@ -16,7 +16,7 @@ services:
     ports:
       - "8081:80"
     env_file:
-      - local.env
+      - config/local.env
     networks:
       - trading-bot-network
   data-clean-batch:
@@ -25,19 +25,14 @@ services:
       - CRON_SCHEDULE=0 0 15 * * *
       - EXPIRE_DATE_COUNT=3
     env_file:
-      - local.env
+      - config/local.env
     networks:
       - trading-bot-network
   training-batch:
     image: ghcr.io/canpok1/bin-option-rust/training-batch:latest
-    environment:
-      - CRON_SCHEDULE=0 0 16 * * Mon,Tue,Wed,Thu,Fri
-      - GENERATION_COUNT=3
-      - CROSSOVER_RATE=0.3
-      - MUTATION_RATE=0.001
-      - FORECAST_MODEL_COUNT=10
     env_file:
-      - local.env
+      - config/local.env
+      - config/training-batch.env
     networks:
       - trading-bot-network
   forecast-server:
@@ -47,7 +42,7 @@ services:
     environment:
       - RATE_EXPIRE_HOUR=12
     env_file:
-      - local.env
+      - config/local.env
     networks:
       - trading-bot-network
   forecast-batch:
@@ -55,7 +50,7 @@ services:
     environment:
       - CRON_SCHEDULE=0 * * * * *
     env_file:
-      - local.env
+      - config/local.env
     networks:
       - trading-bot-network
 networks:
