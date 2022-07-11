@@ -164,8 +164,8 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
 
                 // 交叉
                 let (index1, index2) = loop {
-                    let i = Gene::select_index_random(&genes)?;
-                    let j = Gene::select_index_random(&genes)?;
+                    let i = Gene::select_gene_index_random(&genes)?;
+                    let j = Gene::select_gene_index_random(&genes)?;
                     if i != j {
                         break (i, j);
                     }
@@ -177,7 +177,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
                 new_genes.push(g2);
             } else if v < (config.crossover_rate + config.mutation_rate) {
                 // 突然変異
-                let index = Gene::select_index_random(&genes)?;
+                let index = Gene::select_gene_index_random(&genes)?;
                 let mut new_gene = genes[index].clone();
                 new_gene.mutation(config)?;
                 new_genes.push(new_gene);

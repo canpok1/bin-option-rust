@@ -11,48 +11,63 @@ pub struct Gene {
 }
 
 impl Gene {
-    const FEATURE_SIZE: usize = 10;
+    const FEATURE_SIZE_MIN: usize = 1;
+    const FEATURE_SIZE_MAX: usize = 10;
     const MIN_VALUE: usize = 2;
 
     pub fn new(p: &FeatureParams) -> MyResult<Gene> {
         let mut values = vec![];
+        values.push(p.feature_size);
         values.push(p.fast_period);
-        values.push(p.slow_period);
+        values.push(p.slow_period - p.fast_period);
         values.push(p.signal_period);
         values.push(p.bb_period);
         Ok(Gene { values })
     }
 
     pub fn new_random_gene(config: &config::Config) -> MyResult<Gene> {
-        let mut rng = rand::thread_rng();
         Ok(Gene {
             values: vec![
-                rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
-                rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
-                rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
-                rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size),
+                Self::round_for_feature_size(Self::gen_value_random(config)),
+                Self::gen_value_random(config),
+                Self::gen_value_random(config),
+                Self::gen_value_random(config),
+                Self::gen_value_random(config),
             ],
         })
     }
 
     pub fn to_feature_params(&self) -> MyResult<FeatureParams> {
         Ok(FeatureParams {
-            feature_size: Self::FEATURE_SIZE,
-            fast_period: self.values[0],
-            slow_period: self.values[1],
-            signal_period: self.values[2],
-            bb_period: self.values[3],
+            feature_size: Self::round_for_feature_size(self.values[0]),
+            fast_period: self.values[1],
+            slow_period: self.values[1] + self.values[2],
+            signal_period: self.values[3],
+            bb_period: self.values[4],
         })
     }
 
     pub fn mutation(&mut self, config: &config::Config) -> MyResult<()> {
-        let mut rng = rand::thread_rng();
-        let index = rng.gen_range(0..self.values.len());
-        self.values[index] = rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size);
+        let index = self.gen_index_random();
+        self.values[index] = Self::gen_value_random(config);
         Ok(())
     }
 
-    pub fn select_index_random(genes: &Vec<Gene>) -> MyResult<usize> {
+    fn gen_index_random(&self) -> usize {
+        let mut rng = rand::thread_rng();
+        rng.gen_range(0..self.values.len())
+    }
+
+    fn round_for_feature_size(v: usize) -> usize {
+        (v % (Self::FEATURE_SIZE_MAX - Self::FEATURE_SIZE_MIN)) + Self::FEATURE_SIZE_MIN
+    }
+
+    pub fn gen_value_random(config: &config::Config) -> usize {
+        let mut rng = rand::thread_rng();
+        rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size / 3)
+    }
+
+    pub fn select_gene_index_random(genes: &Vec<Gene>) -> MyResult<usize> {
         let mut rng = rand::thread_rng();
         Ok(rng.gen_range(0..genes.len()))
     }
@@ -80,9 +95,8 @@ impl Gene {
     }
 
     pub fn crossover(g1: &mut Self, g2: &mut Self, max: usize) -> MyResult<()> {
-        let mut rng = rand::thread_rng();
-        let index = rng.gen_range(0..g1.values.len());
-        let mask = 3 << rng.gen_range(0..3);
+        let index = g1.gen_index_random();
+        let mask = 3 << rand::thread_rng().gen_range(0..3);
 
         let tmp1 = g1.values[index] & mask;
         let tmp2 = g2.values[index] & mask;

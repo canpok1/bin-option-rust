@@ -34,9 +34,11 @@ pub fn convert_to_feature(rates_org: &InputData, p: &FeatureParams) -> MyResult<
         let bb_output = bb.next(*rate);
         if i >= size - p.feature_size {
             rates.push(*rate);
+
             macds.push(macd_output.macd);
             signals.push(macd_output.signal);
             histograms.push(macd_output.histogram);
+
             bb_avgs.push(bb_output.average);
             bb_uppers.push(bb_output.upper);
             bb_lowers.push(bb_output.lower);
