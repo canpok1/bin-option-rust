@@ -115,9 +115,11 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             models.push(maker.make_new_models(config.forecast_model_no, &p)?);
         }
 
+        // モデルを評価
         let mut best_model: Option<&ForecastModel> = None;
+        let mut best_index: Option<usize> = None;
         let mut results: Vec<f64> = vec![];
-        for models in models.iter() {
+        for (gene_index, models) in models.iter().enumerate() {
             let index = find_best_model_index(&models)?;
             if let Some(m) = models.get(index) {
                 let mse = m.get_performance_mse()?;
@@ -125,9 +127,11 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
                 if let Some(m2) = best_model {
                     if m2.get_performance_mse()? > mse {
                         best_model = Some(m);
+                        best_index = Some(gene_index);
                     }
                 } else {
                     best_model = Some(m);
+                    best_index = Some(gene_index);
                 }
             }
         }
@@ -136,6 +140,11 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             gen_count, config.generation_count, results
         );
 
+        // 次世代を準備
+        let mut new_genes: Vec<Gene> = vec![];
+        let mut selected: HashSet<usize> = HashSet::new();
+
+        // エリートを保存
         if let Some(m) = best_model {
             info!(
                 "generation[{:<03}/{:<03}] best_result: {}",
@@ -144,15 +153,19 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
                 m.get_performance_mse()?,
             );
             save_model(mysql_cli, m)?;
+
+            if let Some(i) = best_index {
+                selected.insert(i);
+                new_genes.push(genes[i].clone());
+            }
         }
 
+        // 最終世代なら終了
         if gen_count == config.generation_count {
             break;
         }
 
         // 次世代を生成
-        let mut new_genes: Vec<Gene> = vec![];
-        let mut selected: HashSet<usize> = HashSet::new();
         while new_genes.len() < genes.len() {
             let mut rng = rand::thread_rng();
             let v: f32 = rng.gen();
