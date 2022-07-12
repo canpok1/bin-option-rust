@@ -160,8 +160,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
             }
         }
 
-        // 最終世代なら終了
-        if gen_count == config.generation_count {
+        if should_training_complete(config, gen_count, &genes)? {
             break;
         }
 
@@ -227,66 +226,40 @@ fn find_best_model_index(models: &Vec<ForecastModel>) -> MyResult<usize> {
     Ok(best_model_index)
 }
 
-// fn load_data(
-//     config: &config::Config,
-//     mysql_cli: &DefaultClient,
-//     begin: NaiveDateTime,
-//     end: NaiveDateTime,
-//     params: &FeatureParams,
-// ) -> MyResult<(Vec<Vec<f64>>, Vec<f64>)> {
-//     let mut x: Vec<Vec<f64>> = vec![];
-//     let mut y: Vec<f64> = vec![];
-//
-//     let converter = Converter {};
-//
-//     mysql_cli.with_transaction(|tx| -> MyResult<()> {
-//         debug!("fetch rates. begin:{}, end:{}", begin, end);
-//
-//         let rates = mysql_cli.select_rates_for_training(
-//             tx,
-//             &config.currency_pair,
-//             Some(begin),
-//             Some(end),
-//         )?;
-//         debug!("fetched rates count: {}", rates.len());
-//
-//         for offset in 0..rates.len() {
-//             let truth =
-//                 rates.get(offset + config.forecast_input_size - 1 + config.forecast_offset_minutes);
-//             if truth.is_none() {
-//                 break;
-//             }
-//
-//             let mut before: f64 = 0.0;
-//             let mut same_count = 0;
-//             let mut data: Vec<f64> = vec![];
-//             for index in offset..offset + config.forecast_input_size {
-//                 data.push(rates[index].rate.clone());
-//                 if rates[index].rate == before {
-//                     same_count += 1;
-//                 }
-//                 before = rates[index].rate.clone();
-//             }
-//             if same_count > (data.len() / 2) {
-//                 continue;
-//             }
-//             // データ数を偶数にしないとLinearの学習でエラーになるようなので偶数になるよう調整
-//             if offset == rates.len() && x.len() % 2 == 0 {
-//                 continue;
-//             }
-//             x.push(converter.convert_to_features(&data, params)?);
-//             y.push(truth.unwrap().rate);
-//         }
-//
-//         Ok(())
-//     })?;
-//     Ok((x, y))
-// }
-
 fn save_model(mysql_cli: &DefaultClient, model: &ForecastModel) -> MyResult<()> {
     mysql_cli.with_transaction(|tx| {
         mysql_cli.upsert_forecast_model(tx, model)?;
         Ok(())
     })?;
     Ok(())
+}
+
+fn should_training_complete(
+    config: &config::Config,
+    generation_no: i32,
+    genes: &Vec<Gene>,
+) -> MyResult<bool> {
+    // 最終世代なら終了
+    if generation_no == config.generation_count {
+        info!(
+            "generation[{:<03}/{:<03}] training is completed, current is last generation.",
+            generation_no, config.generation_count,
+        );
+        return Ok(true);
+    }
+
+    let similarity = Gene::calc_similarity_average(genes)?;
+    if similarity < 1.0 {
+        info!(
+            "generation[{:<03}/{:<03}] training is completed, similarity is too small. similarity:{}",
+            generation_no, config.generation_count, similarity
+        );
+        return Ok(true);
+    }
+
+    info!(
+        "generation[{:<03}/{:<03}] continue training. similarity:{}",
+        generation_no, config.generation_count, similarity
+    );
+    Ok(false)
 }

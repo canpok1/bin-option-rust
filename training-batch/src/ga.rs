@@ -1,6 +1,9 @@
 use std::cmp;
 
-use common_lib::{domain::model::FeatureParams, error::MyResult};
+use common_lib::{
+    domain::model::FeatureParams,
+    error::{MyError, MyResult},
+};
 use rand::Rng;
 
 use crate::config;
@@ -58,6 +61,15 @@ impl Gene {
         rng.gen_range(0..self.values.len())
     }
 
+    fn calc_similarity(&self, other: &Gene) -> f64 {
+        let mut diff_total = 0_f64;
+        for (i, v) in self.values.iter().enumerate() {
+            let diff = (*v as f64) - (other.values[i] as f64);
+            diff_total += diff.powf(2.0);
+        }
+        diff_total.sqrt()
+    }
+
     fn round_for_feature_size(v: usize) -> usize {
         (v % (Self::FEATURE_SIZE_MAX - Self::FEATURE_SIZE_MIN)) + Self::FEATURE_SIZE_MIN
     }
@@ -109,5 +121,31 @@ impl Gene {
         g2.values[index] = cmp::min(g2.values[index], max);
         g2.values[index] = cmp::max(g2.values[index], Self::MIN_VALUE);
         Ok(())
+    }
+
+    pub fn make_average_gene(genes: &Vec<Gene>) -> MyResult<Gene> {
+        if genes.is_empty() {
+            return Err(Box::new(MyError::ArrayIsEmpty {
+                name: "genes".to_string(),
+            }));
+        }
+
+        let size = genes.len();
+        let mut totals = vec![0; size];
+        for gene in genes.iter() {
+            for (i, v) in gene.values.iter().enumerate() {
+                totals[i] += v;
+            }
+        }
+
+        let values = totals.iter().map(|v| v / size).collect();
+        Ok(Gene { values })
+    }
+
+    pub fn calc_similarity_average(genes: &Vec<Gene>) -> MyResult<f64> {
+        let avg_gene = Self::make_average_gene(genes)?;
+
+        let total: f64 = genes.iter().map(|g| g.calc_similarity(&avg_gene)).sum();
+        Ok(total / genes.len() as f64)
     }
 }

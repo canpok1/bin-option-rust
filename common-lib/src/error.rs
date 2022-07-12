@@ -26,4 +26,7 @@ pub enum MyError {
 
     #[error("input data is too little, count:{}, require:{}", count, require)]
     InputDataIsTooLittle { count: usize, require: usize },
+
+    #[error("{} is empty", name)]
+    ArrayIsEmpty { name: String },
 }
