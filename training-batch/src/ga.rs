@@ -1,5 +1,3 @@
-use std::cmp;
-
 use common_lib::{
     domain::model::FeatureParams,
     error::{MyError, MyResult},
@@ -21,8 +19,8 @@ impl Gene {
     pub fn new(p: &FeatureParams) -> MyResult<Gene> {
         let mut values = vec![];
         values.push(p.feature_size);
-        values.push(p.fast_period);
-        values.push(p.slow_period - p.fast_period);
+        values.push(p.fast_period * 2);
+        values.push((p.slow_period - p.fast_period) * 2);
         values.push(p.signal_period);
         values.push(p.bb_period);
         Ok(Gene { values })
@@ -31,7 +29,7 @@ impl Gene {
     pub fn new_random_gene(config: &config::Config) -> MyResult<Gene> {
         Ok(Gene {
             values: vec![
-                Self::round_for_feature_size(Self::gen_value_random(config)),
+                Self::gen_value_random(config),
                 Self::gen_value_random(config),
                 Self::gen_value_random(config),
                 Self::gen_value_random(config),
@@ -43,8 +41,8 @@ impl Gene {
     pub fn to_feature_params(&self) -> MyResult<FeatureParams> {
         Ok(FeatureParams {
             feature_size: Self::round_for_feature_size(self.values[0]),
-            fast_period: self.values[1],
-            slow_period: self.values[1] + self.values[2],
+            fast_period: self.values[1] / 2,
+            slow_period: self.values[1] / 2 + self.values[2] / 2,
             signal_period: self.values[3],
             bb_period: self.values[4],
         })
@@ -106,20 +104,12 @@ impl Gene {
         Ok(index)
     }
 
-    pub fn crossover(g1: &mut Self, g2: &mut Self, max: usize) -> MyResult<()> {
-        let index = g1.gen_index_random();
-        let mask = 3 << rand::thread_rng().gen_range(0..3);
-
-        let tmp1 = g1.values[index] & mask;
-        let tmp2 = g2.values[index] & mask;
-
-        g1.values[index] = (g1.values[index] & !mask) | tmp2;
-        g1.values[index] = cmp::min(g1.values[index], max);
-        g1.values[index] = cmp::max(g1.values[index], Self::MIN_VALUE);
-
-        g2.values[index] = (g2.values[index] & !mask) | tmp1;
-        g2.values[index] = cmp::min(g2.values[index], max);
-        g2.values[index] = cmp::max(g2.values[index], Self::MIN_VALUE);
+    pub fn crossover(g1: &mut Self, g2: &mut Self) -> MyResult<()> {
+        let index1 = g1.gen_index_random();
+        let index2 = g2.gen_index_random();
+        let tmp = g1.values[index1];
+        g1.values[index1] = g2.values[index2];
+        g2.values[index2] = tmp;
         Ok(())
     }
 

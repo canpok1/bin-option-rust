@@ -44,6 +44,13 @@ pub trait Client {
     ) -> MyResult<Vec<RateForTraining>>;
 
     fn upsert_forecast_model(&self, tx: &mut Transaction, m: &ForecastModel) -> MyResult<()>;
+    fn copy_forecast_model(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+        model_no_from: i32,
+        model_no_to: i32,
+    ) -> MyResult<()>;
     fn select_forecast_model(
         &self,
         tx: &mut Transaction,
@@ -443,6 +450,49 @@ impl Client for DefaultClient {
             }
         };
         log::debug!("query: {}, param: {}", q, m);
+
+        tx.exec_drop(q, p)?;
+
+        Ok(())
+    }
+
+    fn copy_forecast_model(
+        &self,
+        tx: &mut Transaction,
+        pair: &str,
+        model_no_from: i32,
+        model_no_to: i32,
+    ) -> MyResult<()> {
+        let q = format!(
+            r#"
+                INSERT INTO {0}
+                    (pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo)
+                SELECT
+                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo
+                FROM (
+                    SELECT
+                        pair, :model_no_to model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo
+                    FROM {0}
+                    WHERE pair = :pair AND model_no = :model_no_from
+                ) t
+                ON DUPLICATE KEY UPDATE
+                    model_type = t.model_type,
+                    model_data = t.model_data,
+                    input_data_size = t.input_data_size,
+                    feature_params = t.feature_params,
+                    feature_params_hash = t.feature_params_hash,
+                    performance_mse = t.performance_mse,
+                    memo = t.memo;
+            "#,
+            TABLE_NAME_FORECAST_MODEL
+        );
+        let p = params! {
+            "pair" => pair,
+            "model_no_from" => model_no_from,
+            "model_no_to" => model_no_to,
+        };
+
+        log::debug!("query: {}, {:?}", q, p);
 
         tx.exec_drop(q, p)?;
 

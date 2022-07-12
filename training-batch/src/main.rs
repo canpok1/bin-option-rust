@@ -87,8 +87,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         info!("loaded existing data, {:?}", p);
     }
 
-    let genes_count = genes.len() as i32;
-    for _ in 0..(config.forecast_model_count - genes_count) {
+    while genes.len() < config.training_model_count {
         genes.push(Gene::new_random_gene(config)?);
     }
 
@@ -112,7 +111,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
                 p
             );
 
-            models.push(maker.make_new_models(config.forecast_model_no, &p)?);
+            models.push(maker.make_new_models(config.training_model_no, &p)?);
         }
 
         // モデルを評価
@@ -161,6 +160,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         }
 
         if should_training_complete(config, gen_count, &genes)? {
+            copy_training_model_to_forecast_model(mysql_cli, config)?;
             break;
         }
 
@@ -184,7 +184,7 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
                 };
                 let mut g1 = genes[index1].clone();
                 let mut g2 = genes[index2].clone();
-                Gene::crossover(&mut g1, &mut g2, config.forecast_input_size)?;
+                Gene::crossover(&mut g1, &mut g2)?;
                 new_genes.push(g1);
                 new_genes.push(g2);
             } else if v < (config.crossover_rate + config.mutation_rate) {
@@ -229,6 +229,22 @@ fn find_best_model_index(models: &Vec<ForecastModel>) -> MyResult<usize> {
 fn save_model(mysql_cli: &DefaultClient, model: &ForecastModel) -> MyResult<()> {
     mysql_cli.with_transaction(|tx| {
         mysql_cli.upsert_forecast_model(tx, model)?;
+        Ok(())
+    })?;
+    Ok(())
+}
+
+fn copy_training_model_to_forecast_model(
+    mysql_cli: &DefaultClient,
+    config: &config::Config,
+) -> MyResult<()> {
+    mysql_cli.with_transaction(|tx| {
+        mysql_cli.copy_forecast_model(
+            tx,
+            &config.currency_pair,
+            config.training_model_no,
+            config.forecast_model_no,
+        )?;
         Ok(())
     })?;
     Ok(())
