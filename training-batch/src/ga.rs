@@ -74,7 +74,7 @@ impl Gene {
 
     pub fn gen_value_random(config: &config::Config) -> usize {
         let mut rng = rand::thread_rng();
-        rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size / 3)
+        rng.gen_range(Self::MIN_VALUE..=config.forecast_input_size)
     }
 
     pub fn select_gene_index_random(genes: &Vec<Gene>) -> MyResult<usize> {

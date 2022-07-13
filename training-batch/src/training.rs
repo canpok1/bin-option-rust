@@ -62,6 +62,7 @@ pub struct ModelMaker<'a> {
 
 impl ModelMaker<'_> {
     const PERFORMANCE_MSE_DEFAULT: f64 = 1.0;
+    const PERFORMANCE_RMSE_DEFAULT: f64 = 1.0;
 
     pub fn load_existing_model(&self, model_no: i32) -> MyResult<Option<ForecastModel>> {
         let model = self.mysql_cli.with_transaction(|tx| {
@@ -231,6 +232,7 @@ impl ModelMaker<'_> {
             input_data_size: self.config.forecast_input_size,
             feature_params: params.clone(),
             performance_mse: Self::PERFORMANCE_MSE_DEFAULT,
+            performance_rmse: Self::PERFORMANCE_RMSE_DEFAULT,
             memo: "RandomForest".to_string(),
         };
 
@@ -261,6 +263,7 @@ impl ModelMaker<'_> {
             input_data_size: self.config.forecast_input_size,
             feature_params: params.clone(),
             performance_mse: Self::PERFORMANCE_MSE_DEFAULT,
+            performance_rmse: Self::PERFORMANCE_RMSE_DEFAULT,
             memo: "KNN".to_string(),
         };
 
@@ -287,6 +290,7 @@ impl ModelMaker<'_> {
             input_data_size: self.config.forecast_input_size,
             feature_params: params.clone(),
             performance_mse: Self::PERFORMANCE_MSE_DEFAULT,
+            performance_rmse: Self::PERFORMANCE_RMSE_DEFAULT,
             memo: "Linear".to_string(),
         };
 
@@ -317,6 +321,7 @@ impl ModelMaker<'_> {
             input_data_size: self.config.forecast_input_size,
             feature_params: params.clone(),
             performance_mse: Self::PERFORMANCE_MSE_DEFAULT,
+            performance_rmse: Self::PERFORMANCE_RMSE_DEFAULT,
             memo: "Ridge".to_string(),
         };
 
@@ -347,6 +352,7 @@ impl ModelMaker<'_> {
             input_data_size: self.config.forecast_input_size,
             feature_params: params.clone(),
             performance_mse: Self::PERFORMANCE_MSE_DEFAULT,
+            performance_rmse: Self::PERFORMANCE_RMSE_DEFAULT,
             memo: "LASSO".to_string(),
         };
 
@@ -379,6 +385,7 @@ impl ModelMaker<'_> {
             input_data_size: self.config.forecast_input_size,
             feature_params: params.clone(),
             performance_mse: Self::PERFORMANCE_MSE_DEFAULT,
+            performance_rmse: Self::PERFORMANCE_RMSE_DEFAULT,
             memo: "ElasticNet".to_string(),
         };
 
@@ -432,6 +439,7 @@ impl ModelMaker<'_> {
             input_data_size: self.config.forecast_input_size,
             feature_params: params.clone(),
             performance_mse: Self::PERFORMANCE_MSE_DEFAULT,
+            performance_rmse: Self::PERFORMANCE_RMSE_DEFAULT,
             memo: "SVR".to_string(),
         };
 

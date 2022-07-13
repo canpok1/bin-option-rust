@@ -35,6 +35,7 @@ pub struct ForecastModelRecord {
     pub feature_params: FeatureParams,
     pub feature_params_hash: String,
     pub performance_mse: f64,
+    pub performance_rmse: f64,
     pub memo: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -60,6 +61,7 @@ impl ForecastModelRecord {
                 input_data_size: self.input_data_size,
                 feature_params: self.feature_params.clone(),
                 performance_mse: self.performance_mse,
+                performance_rmse: self.performance_rmse,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_KNN => Ok(domain::model::ForecastModel::KNN {
@@ -71,6 +73,7 @@ impl ForecastModelRecord {
                 input_data_size: self.input_data_size,
                 feature_params: self.feature_params.clone(),
                 performance_mse: self.performance_mse,
+                performance_rmse: self.performance_rmse,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_LINEAR => Ok(domain::model::ForecastModel::Linear {
@@ -82,6 +85,7 @@ impl ForecastModelRecord {
                 input_data_size: self.input_data_size,
                 feature_params: self.feature_params.clone(),
                 performance_mse: self.performance_mse,
+                performance_rmse: self.performance_rmse,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_RIDGE => Ok(domain::model::ForecastModel::Ridge {
@@ -93,6 +97,7 @@ impl ForecastModelRecord {
                 input_data_size: self.input_data_size,
                 feature_params: self.feature_params.clone(),
                 performance_mse: self.performance_mse,
+                performance_rmse: self.performance_rmse,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_LASSO => Ok(domain::model::ForecastModel::LASSO {
@@ -102,6 +107,7 @@ impl ForecastModelRecord {
                 input_data_size: self.input_data_size,
                 feature_params: self.feature_params.clone(),
                 performance_mse: self.performance_mse,
+                performance_rmse: self.performance_rmse,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_ELASTIC_NET => Ok(domain::model::ForecastModel::ElasticNet {
@@ -111,6 +117,7 @@ impl ForecastModelRecord {
                 input_data_size: self.input_data_size,
                 feature_params: self.feature_params.clone(),
                 performance_mse: self.performance_mse,
+                performance_rmse: self.performance_rmse,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_LOGISTIC => Ok(domain::model::ForecastModel::Logistic {
@@ -122,6 +129,7 @@ impl ForecastModelRecord {
                 input_data_size: self.input_data_size,
                 feature_params: self.feature_params.clone(),
                 performance_mse: self.performance_mse,
+                performance_rmse: self.performance_rmse,
                 memo: self.memo.clone(),
             }),
             MODEL_TYPE_SVR => Ok(domain::model::ForecastModel::SVR {
@@ -133,6 +141,7 @@ impl ForecastModelRecord {
                 input_data_size: self.input_data_size,
                 feature_params: self.feature_params.clone(),
                 performance_mse: self.performance_mse,
+                performance_rmse: self.performance_rmse,
                 memo: self.memo.clone(),
             }),
             _ => Err(Box::new(MyError::UnknownModelType {

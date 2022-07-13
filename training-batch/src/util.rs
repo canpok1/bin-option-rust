@@ -32,6 +32,11 @@ pub fn load_input_data(
         debug!("fetched rates count: {}", rates.len());
 
         for offset in 0..rates.len() {
+            // 似たようなデータを減らすために期間を空ける
+            if offset % 5 > 0 {
+                continue;
+            }
+
             let truth =
                 rates.get(offset + config.forecast_input_size - 1 + config.forecast_offset_minutes);
             if truth.is_none() {
@@ -48,9 +53,12 @@ pub fn load_input_data(
                 }
                 before = rates[index].rate.clone();
             }
+
+            // 長期間変動がないデータは学習データとしては不適切なのでスキップ
             if same_count > (data.len() / 2) {
                 continue;
             }
+
             x.push(data);
             y.push(truth.unwrap().rate);
         }

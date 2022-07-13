@@ -53,7 +53,7 @@ category = "MyCommand"
 workspace = false
 command = "cargo"
 args = ["run", "-p", "data-clean-batch"]
-env = { "EXPIRE_DATE_COUNT" = "3", "CRON_SCHEDULE" = "0 * * * * *" }
+env = { "EXPIRE_DATE_COUNT" = "7", "CRON_SCHEDULE" = "0 * * * * *" }
 
 
 [tasks.generate_rate_gateway_lib]

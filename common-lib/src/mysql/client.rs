@@ -265,9 +265,9 @@ impl Client for DefaultClient {
         let q = format!(
             r#"
                 INSERT INTO {}
-                    (pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo)
+                    (pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, performance_rmse, memo)
                 VALUES
-                    (:pair, :no, :type, :data, :input_data_size, :feature_params, :feature_params_hash, :performance_mse, :memo)
+                    (:pair, :no, :type, :data, :input_data_size, :feature_params, :feature_params_hash, :performance_mse, :performance_rmse, :memo)
                 ON DUPLICATE KEY UPDATE
                     model_type = :type,
                     model_data = :data,
@@ -275,6 +275,7 @@ impl Client for DefaultClient {
                     feature_params = :feature_params,
                     feature_params_hash = :feature_params_hash,
                     performance_mse = :performance_mse,
+                    performance_rmse = :performance_rmse,
                     memo = :memo;
             "#,
             TABLE_NAME_FORECAST_MODEL
@@ -286,6 +287,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
@@ -298,6 +300,7 @@ impl Client for DefaultClient {
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
                     "performance_mse" => performance_mse,
+                    "performance_rmse" => performance_rmse,
                     "memo" => memo,
                 }
             }
@@ -307,6 +310,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
@@ -319,6 +323,7 @@ impl Client for DefaultClient {
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
                     "performance_mse" => performance_mse,
+                    "performance_rmse" => performance_rmse,
                     "memo" => memo,
                 }
             }
@@ -328,6 +333,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
@@ -340,6 +346,7 @@ impl Client for DefaultClient {
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
                     "performance_mse" => performance_mse,
+                    "performance_rmse" => performance_rmse,
                     "memo" => memo,
                 }
             }
@@ -349,6 +356,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
@@ -361,6 +369,7 @@ impl Client for DefaultClient {
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
                     "performance_mse" => performance_mse,
+                    "performance_rmse" => performance_rmse,
                     "memo" => memo,
                 }
             }
@@ -370,6 +379,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
@@ -382,6 +392,7 @@ impl Client for DefaultClient {
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
                     "performance_mse" => performance_mse,
+                    "performance_rmse" => performance_rmse,
                     "memo" => memo,
                 }
             }
@@ -391,6 +402,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
@@ -403,6 +415,7 @@ impl Client for DefaultClient {
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
                     "performance_mse" => performance_mse,
+                    "performance_rmse" => performance_rmse,
                     "memo" => memo,
                 }
             }
@@ -412,6 +425,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
@@ -424,6 +438,7 @@ impl Client for DefaultClient {
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
                     "performance_mse" => performance_mse,
+                    "performance_rmse" => performance_rmse,
                     "memo" => memo,
                 }
             }
@@ -433,6 +448,7 @@ impl Client for DefaultClient {
                 input_data_size,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
@@ -445,6 +461,7 @@ impl Client for DefaultClient {
                     "feature_params" => Serialized(feature_params),
                     "feature_params_hash" => feature_params.to_hash()?,
                     "performance_mse" => performance_mse,
+                    "performance_rmse" => performance_rmse,
                     "memo" => memo,
                 }
             }
@@ -466,12 +483,12 @@ impl Client for DefaultClient {
         let q = format!(
             r#"
                 INSERT INTO {0}
-                    (pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo)
+                    (pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, performance_rmse, memo)
                 SELECT
-                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo
+                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, performance_rmse, memo
                 FROM (
                     SELECT
-                        pair, :model_no_to model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo
+                        pair, :model_no_to model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, performance_rmse, memo
                     FROM {0}
                     WHERE pair = :pair AND model_no = :model_no_from
                 ) t
@@ -482,6 +499,7 @@ impl Client for DefaultClient {
                     feature_params = t.feature_params,
                     feature_params_hash = t.feature_params_hash,
                     performance_mse = t.performance_mse,
+                    performance_rmse = t.performance_rmse,
                     memo = t.memo;
             "#,
             TABLE_NAME_FORECAST_MODEL
@@ -508,7 +526,7 @@ impl Client for DefaultClient {
         let q = format!(
             r#"
                 SELECT
-                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo, created_at, updated_at
+                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, performance_rmse, memo, created_at, updated_at
                 FROM {}
                 WHERE
                     pair = :pair AND model_no = :no;
@@ -530,6 +548,7 @@ impl Client for DefaultClient {
             feature_params_raw,
             feature_params_hash,
             performance_mse,
+            performance_rmse,
             memo,
             created_at,
             updated_at,
@@ -546,6 +565,7 @@ impl Client for DefaultClient {
                 feature_params: feature_params_value.to_domain()?,
                 feature_params_hash,
                 performance_mse,
+                performance_rmse,
                 memo,
                 created_at,
                 updated_at,
@@ -568,7 +588,7 @@ impl Client for DefaultClient {
         let q = format!(
             r#"
                 SELECT
-                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, memo, created_at, updated_at
+                    pair, model_no, model_type, model_data, input_data_size, feature_params, feature_params_hash, performance_mse, performance_rmse, memo, created_at, updated_at
                 FROM {}
                 WHERE
                     pair = :pair
@@ -593,6 +613,7 @@ impl Client for DefaultClient {
                     feature_params_raw,
                     feature_params_hash,
                     performance_mse,
+                    performance_rmse,
                     memo,
                     created_at,
                     updated_at,
@@ -608,6 +629,7 @@ impl Client for DefaultClient {
                     feature_params: feature_params_value.to_domain()?,
                     feature_params_hash,
                     performance_mse,
+                    performance_rmse,
                     memo,
                     created_at,
                     updated_at,

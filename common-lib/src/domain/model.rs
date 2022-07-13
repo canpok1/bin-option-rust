@@ -94,6 +94,7 @@ pub enum ForecastModel {
         input_data_size: usize,
         feature_params: FeatureParams,
         performance_mse: f64,
+        performance_rmse: f64,
         memo: String,
     },
     KNN {
@@ -103,6 +104,7 @@ pub enum ForecastModel {
         input_data_size: usize,
         feature_params: FeatureParams,
         performance_mse: f64,
+        performance_rmse: f64,
         memo: String,
     },
     Linear {
@@ -112,6 +114,7 @@ pub enum ForecastModel {
         input_data_size: usize,
         feature_params: FeatureParams,
         performance_mse: f64,
+        performance_rmse: f64,
         memo: String,
     },
     Ridge {
@@ -121,6 +124,7 @@ pub enum ForecastModel {
         input_data_size: usize,
         feature_params: FeatureParams,
         performance_mse: f64,
+        performance_rmse: f64,
         memo: String,
     },
     LASSO {
@@ -130,6 +134,7 @@ pub enum ForecastModel {
         input_data_size: usize,
         feature_params: FeatureParams,
         performance_mse: f64,
+        performance_rmse: f64,
         memo: String,
     },
     ElasticNet {
@@ -139,6 +144,7 @@ pub enum ForecastModel {
         input_data_size: usize,
         feature_params: FeatureParams,
         performance_mse: f64,
+        performance_rmse: f64,
         memo: String,
     },
     Logistic {
@@ -148,6 +154,7 @@ pub enum ForecastModel {
         input_data_size: usize,
         feature_params: FeatureParams,
         performance_mse: f64,
+        performance_rmse: f64,
         memo: String,
     },
     SVR {
@@ -157,6 +164,7 @@ pub enum ForecastModel {
         input_data_size: usize,
         feature_params: FeatureParams,
         performance_mse: f64,
+        performance_rmse: f64,
         memo: String,
     },
 }
@@ -262,44 +270,68 @@ impl ForecastModel {
     fn set_performance_mse(&mut self, v: f64) -> MyResult<()> {
         match self {
             ForecastModel::RandomForest {
-                performance_mse, ..
+                performance_mse,
+                performance_rmse,
+                ..
             } => {
                 *performance_mse = v;
+                *performance_rmse = v.sqrt();
             }
             ForecastModel::KNN {
-                performance_mse, ..
+                performance_mse,
+                performance_rmse,
+                ..
             } => {
                 *performance_mse = v;
+                *performance_rmse = v.sqrt();
             }
             ForecastModel::Linear {
-                performance_mse, ..
+                performance_mse,
+                performance_rmse,
+                ..
             } => {
                 *performance_mse = v;
+                *performance_rmse = v.sqrt();
             }
             ForecastModel::Ridge {
-                performance_mse, ..
+                performance_mse,
+                performance_rmse,
+                ..
             } => {
                 *performance_mse = v;
+                *performance_rmse = v.sqrt();
             }
             ForecastModel::LASSO {
-                performance_mse, ..
+                performance_mse,
+                performance_rmse,
+                ..
             } => {
                 *performance_mse = v;
+                *performance_rmse = v.sqrt();
             }
             ForecastModel::ElasticNet {
-                performance_mse, ..
+                performance_mse,
+                performance_rmse,
+                ..
             } => {
                 *performance_mse = v;
+                *performance_rmse = v.sqrt();
             }
             ForecastModel::Logistic {
-                performance_mse, ..
+                performance_mse,
+                performance_rmse,
+                ..
             } => {
                 *performance_mse = v;
+                *performance_rmse = v.sqrt();
             }
             ForecastModel::SVR {
-                performance_mse, ..
+                performance_mse,
+                performance_rmse,
+                ..
             } => {
                 *performance_mse = v;
+                *performance_rmse = v.sqrt();
             }
         }
         Ok(())
@@ -359,13 +391,14 @@ impl fmt::Display for ForecastModel {
                 no,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "RandomForest(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
-                    pair, no, feature_params, performance_mse, memo
+                    "RandomForest(pair: {}, no: {}, feature_params: {:?}, mse: {}, rmse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, performance_rmse,memo
                 )
             }
             ForecastModel::KNN {
@@ -373,13 +406,14 @@ impl fmt::Display for ForecastModel {
                 no,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "KNN(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
-                    pair, no, feature_params, performance_mse, memo
+                    "KNN(pair: {}, no: {}, feature_params: {:?}, mse: {}, rmse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, performance_rmse, memo
                 )
             }
             ForecastModel::Linear {
@@ -387,13 +421,14 @@ impl fmt::Display for ForecastModel {
                 no,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "Linear(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
-                    pair, no, feature_params, performance_mse, memo
+                    "Linear(pair: {}, no: {}, feature_params: {:?}, mse: {}, rmse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, performance_rmse, memo
                 )
             }
             ForecastModel::Ridge {
@@ -401,13 +436,14 @@ impl fmt::Display for ForecastModel {
                 no,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "Ridge(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
-                    pair, no, feature_params, performance_mse, memo
+                    "Ridge(pair: {}, no: {}, feature_params: {:?}, mse: {}, rmse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, performance_rmse, memo
                 )
             }
             ForecastModel::LASSO {
@@ -415,13 +451,14 @@ impl fmt::Display for ForecastModel {
                 no,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "LASSO(pair: {}, no: {}, feature_params: {:?}, peformance_mse: {}, memo: {})",
-                    pair, no, feature_params, performance_mse, memo
+                    "LASSO(pair: {}, no: {}, feature_params: {:?}, mse: {}, rmse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, performance_rmse, memo
                 )
             }
             ForecastModel::ElasticNet {
@@ -429,13 +466,14 @@ impl fmt::Display for ForecastModel {
                 no,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "ElasticNet(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
-                    pair, no, feature_params, performance_mse, memo
+                    "ElasticNet(pair: {}, no: {}, feature_params: {:?}, mse: {}, rmse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, performance_rmse, memo
                 )
             }
             ForecastModel::Logistic {
@@ -443,13 +481,14 @@ impl fmt::Display for ForecastModel {
                 no,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "Logistic(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
-                    pair, no, feature_params, performance_mse, memo
+                    "Logistic(pair: {}, no: {}, feature_params: {:?}, mse: {}, rmse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, performance_rmse, memo
                 )
             }
             ForecastModel::SVR {
@@ -457,13 +496,14 @@ impl fmt::Display for ForecastModel {
                 no,
                 feature_params,
                 performance_mse,
+                performance_rmse,
                 memo,
                 ..
             } => {
                 write!(
                     f,
-                    "SVR(pair: {}, no: {}, feature_params: {:?}, performance_mse: {}, memo: {})",
-                    pair, no, feature_params, performance_mse, memo
+                    "SVR(pair: {}, no: {}, feature_params: {:?}, mse: {}, rmse: {}, memo: {})",
+                    pair, no, feature_params, performance_mse, performance_rmse, memo
                 )
             }
         }
