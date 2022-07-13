@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use common_lib::{
     domain::model::FeatureParams,
     error::{MyError, MyResult},
@@ -41,10 +43,10 @@ impl Gene {
     pub fn to_feature_params(&self) -> MyResult<FeatureParams> {
         Ok(FeatureParams {
             feature_size: Self::round_for_feature_size(self.values[0]),
-            fast_period: self.values[1] / 2,
-            slow_period: self.values[1] / 2 + self.values[2] / 2,
-            signal_period: self.values[3],
-            bb_period: self.values[4],
+            fast_period: Self::round(self.values[1] / 2),
+            slow_period: Self::round(self.values[1] / 2 + self.values[2] / 2),
+            signal_period: Self::round(self.values[3]),
+            bb_period: Self::round(self.values[4]),
         })
     }
 
@@ -66,6 +68,10 @@ impl Gene {
             diff_total += diff.powf(2.0);
         }
         diff_total.sqrt()
+    }
+
+    fn round(v: usize) -> usize {
+        max(v, Self::MIN_VALUE)
     }
 
     fn round_for_feature_size(v: usize) -> usize {
