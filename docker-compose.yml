@@ -23,7 +23,7 @@ services:
     image: ghcr.io/canpok1/bin-option-rust/data-clean-batch:latest
     environment:
       - CRON_SCHEDULE=0 0 15 * * *
-      - EXPIRE_DATE_COUNT=3
+      - EXPIRE_DATE_COUNT=30
     env_file:
       - config/local.env
     networks:

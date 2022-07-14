@@ -68,15 +68,15 @@ fn main() {
 fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
     let loader = InputDataLoader { config, mysql_cli };
     let (org_x, org_y) = loader.load()?;
-    let (train_base_x, test_x, train_base_y, test_y) = util::train_test_split(&org_x, &org_y, 0.2)?;
-    info!("training data count: {}", train_base_x.len());
+    let (train_x, test_x, train_y, test_y) = util::train_test_split(&org_x, &org_y, 0.2)?;
+    info!("training data count: {}", train_x.len());
     info!("test data count: {}", test_x.len());
 
     let maker = ModelMaker {
         config,
         mysql_cli,
-        train_base_x: &train_base_x,
-        train_base_y: &train_base_y,
+        train_x: &train_x,
+        train_y: &train_y,
         test_x: &test_x,
         test_y: &test_y,
     };

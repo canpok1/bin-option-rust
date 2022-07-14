@@ -54,8 +54,8 @@ impl InputDataLoader<'_> {
 pub struct ModelMaker<'a> {
     pub config: &'a config::Config,
     pub mysql_cli: &'a mysql::client::DefaultClient,
-    pub train_base_x: &'a Vec<InputData>,
-    pub train_base_y: &'a Vec<f64>,
+    pub train_x: &'a Vec<InputData>,
+    pub train_y: &'a Vec<f64>,
     pub test_x: &'a Vec<InputData>,
     pub test_y: &'a Vec<f64>,
 }
@@ -95,120 +95,125 @@ impl ModelMaker<'_> {
     ) -> MyResult<Vec<ForecastModel>> {
         let mut models: Vec<ForecastModel> = vec![];
 
-        let train_base_x = convert_to_features(self.train_base_x, params)?;
+        let train_x = convert_to_features(self.train_x, params)?;
         let test_x = convert_to_features(self.test_x, params)?;
 
-        for index in 1..=self.config.training_count {
-            let (train_x, _, train_y, _) =
-                util::train_test_split(&train_base_x, self.train_base_y, 0.2)?;
-
-            debug!("training[{:2}] RandomForest ...", index);
-            match self.make_random_forest(
-                model_no,
-                &params,
-                &train_x,
-                &train_y,
-                &test_x,
-                &self.test_y,
-            ) {
-                Ok(m) => {
-                    models.push(m);
-                }
-                Err(err) => {
-                    warn!(
-                        "training[{:2}] skip RandomForest, error occured. error:{}",
-                        index, err
-                    );
-                }
+        debug!("training RandomForest ...");
+        match self.make_random_forest(
+            model_no,
+            &params,
+            &train_x,
+            &self.train_y,
+            &test_x,
+            &self.test_y,
+        ) {
+            Ok(m) => {
+                models.push(m);
             }
-
-            debug!("training[{:2}] KNN ...", index);
-            match self.make_knn(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
-                Ok(m) => {
-                    models.push(m);
-                }
-                Err(err) => {
-                    warn!(
-                        "training[{:2}] skip KNN, error occured. error:{}",
-                        index, err
-                    );
-                }
+            Err(err) => {
+                warn!("training skip RandomForest, error occured. error:{}", err);
             }
+        }
 
-            debug!("training[{:2}] Linear ...", index);
-            match self.make_linear(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
-                Ok(m) => {
-                    models.push(m);
-                }
-                Err(err) => {
-                    warn!(
-                        "training[{:2}] skip Linear, error occured. error:{}",
-                        index, err
-                    );
-                }
+        debug!("training KNN ...");
+        match self.make_knn(
+            model_no,
+            &params,
+            &train_x,
+            &self.train_y,
+            &test_x,
+            &self.test_y,
+        ) {
+            Ok(m) => {
+                models.push(m);
             }
-
-            debug!("training[{:2}] Ridge ...", index);
-            match self.make_ridge(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
-                Ok(m) => {
-                    models.push(m);
-                }
-                Err(err) => {
-                    warn!(
-                        "training[{:2}] skip Ridge, error occured. error:{}",
-                        index, err
-                    );
-                }
+            Err(err) => {
+                warn!("training skip KNN, error occured. error:{}", err);
             }
+        }
 
-            debug!("training[{:2}] LASSO ...", index);
-            match self.make_lasso(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
-                Ok(m) => {
-                    models.push(m);
-                }
-                Err(err) => {
-                    warn!(
-                        "training[{:2}] skip LASSO, error occured. error:{}",
-                        index, err
-                    );
-                }
+        debug!("training Linear ...");
+        match self.make_linear(
+            model_no,
+            &params,
+            &train_x,
+            &self.train_y,
+            &test_x,
+            &self.test_y,
+        ) {
+            Ok(m) => {
+                models.push(m);
             }
-
-            debug!("training[{:2}] ElasticNet ...", index);
-            match self.make_elastic_net(
-                model_no,
-                &params,
-                &train_x,
-                &train_y,
-                &test_x,
-                &self.test_y,
-            ) {
-                Ok(m) => {
-                    models.push(m);
-                }
-                Err(err) => {
-                    warn!(
-                        "training[{:2}] skip ElasticNet, error occured. error:{}",
-                        index, err
-                    );
-                }
+            Err(err) => {
+                warn!("training skip Linear, error occured. error:{}", err);
             }
+        }
 
-            //  学習が終わらなかったためコメントアウト
-            //  debug!("training[{:2}] Logistic ...", index);
-            //  models.push(make_elastic_net(&p, &train_x, &train_y, config)?);
+        debug!("training Ridge ...");
+        match self.make_ridge(
+            model_no,
+            &params,
+            &train_x,
+            &self.train_y,
+            &test_x,
+            &self.test_y,
+        ) {
+            Ok(m) => {
+                models.push(m);
+            }
+            Err(err) => {
+                warn!("training skip Ridge, error occured. error:{}", err);
+            }
+        }
 
-            debug!("training[{:2}] SVR ...", index);
-            match self.make_svr(model_no, &params, &train_x, &train_y, &test_x, &self.test_y) {
-                Ok(m) => {
-                    models.push(m);
-                }
-                Err(err) => {
-                    warn!(
-                        "training[{:2}] skip SVR, error occured. error:{}",
-                        index, err
-                    );
-                }
+        debug!("training LASSO ...");
+        match self.make_lasso(
+            model_no,
+            &params,
+            &train_x,
+            &self.train_y,
+            &test_x,
+            &self.test_y,
+        ) {
+            Ok(m) => {
+                models.push(m);
+            }
+            Err(err) => {
+                warn!("training skip LASSO, error occured. error:{}", err);
+            }
+        }
+
+        debug!("training ElasticNet ...");
+        match self.make_elastic_net(
+            model_no,
+            &params,
+            &train_x,
+            &self.train_y,
+            &test_x,
+            &self.test_y,
+        ) {
+            Ok(m) => {
+                models.push(m);
+            }
+            Err(err) => {
+                warn!("training skip ElasticNet, error occured. error:{}", err);
+            }
+        }
+
+        debug!("training SVR ...");
+        match self.make_svr(
+            model_no,
+            &params,
+            &train_x,
+            &self.train_y,
+            &test_x,
+            &self.test_y,
+        ) {
+            Ok(m) => {
+                models.push(m);
+            }
+            Err(err) => {
+                warn!("training skip SVR, error occured. error:{}", err);
             }
         }
 
@@ -393,26 +398,6 @@ impl ModelMaker<'_> {
 
         Ok(m)
     }
-
-    // fn make_ligistic(
-    //     params: &FeatureParams,
-    //     train_x: &Vec<FeatureData>,
-    //     train_y: &Vec<f64>,
-    //     config: &Config,
-    // ) -> MyResult<ForecastModel> {
-    //     let matrix = DenseMatrix::from_2d_vec(&train_x);
-    //     let r = LogisticRegression::fit(
-    //         &train_x,
-    //         &train_y,
-    //         Default::default(),
-    //     )?;
-    //     Ok(ForecastModel::Logistic {
-    //         pair: config.currency_pair.clone(),
-    //         no: self.forecast_model_no,
-    //         model: r,
-    //         memo: "Logistic".to_string(),
-    //     })
-    // }
 
     fn make_svr(
         &self,
