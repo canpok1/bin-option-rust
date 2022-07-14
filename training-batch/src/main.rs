@@ -67,9 +67,11 @@ fn main() {
 
 fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> {
     let loader = InputDataLoader { config, mysql_cli };
-    let (org_x, org_y) = loader.load()?;
-    let (train_x, test_x, train_y, test_y) = util::train_test_split(&org_x, &org_y, 0.2)?;
+
+    let (train_x, train_y) = loader.load_training_data()?;
     info!("training data count: {}", train_x.len());
+
+    let (test_x, test_y) = loader.load_test_data()?;
     info!("test data count: {}", test_x.len());
 
     let maker = ModelMaker {
@@ -148,10 +150,11 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         // エリートを保存
         if let Some(m) = best_model {
             info!(
-                "generation[{:<03}/{:<03}] best_result: {}",
+                "generation[{:<03}/{:<03}] best_result(mse): {}, best_result(rmse): {}",
                 gen_count,
                 config.generation_count,
                 m.get_performance_mse()?,
+                m.get_performance_rmse()?,
             );
             save_model(mysql_cli, m)?;
 

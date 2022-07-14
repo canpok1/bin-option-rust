@@ -267,6 +267,35 @@ impl ForecastModel {
         }
     }
 
+    pub fn get_performance_rmse(&self) -> MyResult<f64> {
+        match self {
+            ForecastModel::RandomForest {
+                performance_rmse, ..
+            } => Ok(*performance_rmse),
+            ForecastModel::KNN {
+                performance_rmse, ..
+            } => Ok(*performance_rmse),
+            ForecastModel::Linear {
+                performance_rmse, ..
+            } => Ok(*performance_rmse),
+            ForecastModel::Ridge {
+                performance_rmse, ..
+            } => Ok(*performance_rmse),
+            ForecastModel::LASSO {
+                performance_rmse, ..
+            } => Ok(*performance_rmse),
+            ForecastModel::ElasticNet {
+                performance_rmse, ..
+            } => Ok(*performance_rmse),
+            ForecastModel::Logistic {
+                performance_rmse, ..
+            } => Ok(*performance_rmse),
+            ForecastModel::SVR {
+                performance_rmse, ..
+            } => Ok(*performance_rmse),
+        }
+    }
+
     fn set_performance_mse(&mut self, v: f64) -> MyResult<()> {
         match self {
             ForecastModel::RandomForest {

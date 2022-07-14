@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::{Duration, NaiveDateTime, Utc};
 use common_lib::{
     domain::{
         model::{FeatureData, FeatureParams, ForecastModel, InputData},
@@ -33,21 +33,41 @@ pub struct InputDataLoader<'a> {
 }
 
 impl InputDataLoader<'_> {
-    pub fn load(&self) -> MyResult<(Vec<InputData>, Vec<f64>)> {
-        let end = Utc::now().naive_utc();
-        let begin =
-            (Utc::now() - Duration::hours(self.config.training_data_range_hour)).naive_utc();
+    pub fn load_training_data(&self) -> MyResult<(Vec<InputData>, Vec<f64>)> {
+        let end = (Utc::now() - Duration::hours(self.config.training_data_range_end_offset_hour))
+            .naive_utc();
+        let begin = (Utc::now()
+            - Duration::hours(self.config.training_data_range_begin_offset_hour))
+        .naive_utc();
 
-        let (org_x, org_y) = util::load_input_data(self.config, self.mysql_cli, begin, end)?;
-        let org_count = org_x.len();
-        if org_count < self.config.training_data_required_count {
+        self.load_data(begin, end, self.config.training_data_required_count)
+    }
+
+    pub fn load_test_data(&self) -> MyResult<(Vec<InputData>, Vec<f64>)> {
+        let end =
+            (Utc::now() - Duration::hours(self.config.test_data_range_end_offset_hour)).naive_utc();
+        let begin = (Utc::now() - Duration::hours(self.config.test_data_range_begin_offset_hour))
+            .naive_utc();
+
+        self.load_data(begin, end, self.config.test_data_required_count)
+    }
+
+    fn load_data(
+        &self,
+        begin: NaiveDateTime,
+        end: NaiveDateTime,
+        required_count: usize,
+    ) -> MyResult<(Vec<InputData>, Vec<f64>)> {
+        let (x, y) = util::load_input_data(self.config, self.mysql_cli, begin, end)?;
+        let count = x.len();
+        if count < required_count {
             return Err(Box::new(MyError::InputDataIsTooLittle {
-                count: org_count,
-                require: self.config.training_data_required_count,
+                count,
+                require: required_count,
             }));
         }
 
-        Ok((org_x, org_y))
+        Ok((x, y))
     }
 }
 
