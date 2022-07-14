@@ -16,17 +16,11 @@ pub fn convert_to_feature(rates_org: &InputData, p: &FeatureParams) -> MyResult<
 
     // 特徴量1から順に配列へと格納
     // 特徴量1: レート
-    // 特徴量2: MACD
-    // 特徴量3: signal
-    // 特徴量4: histogram
-    // 特徴量5: BB（AVG）
-    // 特徴量6: BB（Upper）
-    // 特徴量7: BB（Lower）
+    // 特徴量2: MACD（histogram）
+    // 特徴量3: BB（Upper）
+    // 特徴量4: BB（Lower）
     let mut rates = vec![];
-    let mut macds = vec![];
-    let mut signals = vec![];
     let mut histograms = vec![];
-    let mut bb_avgs = vec![];
     let mut bb_uppers = vec![];
     let mut bb_lowers = vec![];
     for (i, rate) in rates_org.iter().enumerate() {
@@ -35,11 +29,8 @@ pub fn convert_to_feature(rates_org: &InputData, p: &FeatureParams) -> MyResult<
         if i >= size - p.feature_size {
             rates.push(*rate);
 
-            macds.push(macd_output.macd);
-            signals.push(macd_output.signal);
             histograms.push(macd_output.histogram);
 
-            bb_avgs.push(bb_output.average);
             bb_uppers.push(bb_output.upper);
             bb_lowers.push(bb_output.lower);
         }
@@ -47,10 +38,7 @@ pub fn convert_to_feature(rates_org: &InputData, p: &FeatureParams) -> MyResult<
 
     let mut converted = vec![];
     converted.extend(&rates);
-    converted.extend(&macds);
-    converted.extend(&signals);
     converted.extend(&histograms);
-    converted.extend(&bb_avgs);
     converted.extend(&bb_uppers);
     converted.extend(&bb_lowers);
     Ok(converted)
