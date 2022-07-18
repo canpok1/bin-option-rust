@@ -125,10 +125,10 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
         for (gene_index, models) in models.iter().enumerate() {
             let index = find_best_model_index(&models)?;
             if let Some(m) = models.get(index) {
-                let mse = m.get_performance_mse()?;
+                let mse = m.get_performance_mse();
                 results.push(mse);
                 if let Some(m2) = best_model {
-                    if m2.get_performance_mse()? > mse {
+                    if m2.get_performance_mse() > mse {
                         best_model = Some(m);
                         best_index = Some(gene_index);
                     }
@@ -153,8 +153,8 @@ fn training(config: &config::Config, mysql_cli: &DefaultClient) -> MyResult<()> 
                 "generation[{:<03}/{:<03}] best_result(mse): {}, best_result(rmse): {}",
                 gen_count,
                 config.generation_count,
-                m.get_performance_mse()?,
-                m.get_performance_rmse()?,
+                m.get_performance_mse(),
+                m.get_performance_rmse(),
             );
             save_model(mysql_cli, m)?;
 
@@ -222,7 +222,7 @@ fn find_best_model_index(models: &Vec<ForecastModel>) -> MyResult<usize> {
     let mut best_model_index: usize = 0;
     let mut best_mse: Option<f64> = None;
     for (i, m) in models.iter().enumerate() {
-        let mse = m.get_performance_mse()?;
+        let mse = m.get_performance_mse();
         if best_mse.is_none() || mse < best_mse.unwrap() {
             best_model_index = i;
             best_mse = Some(mse);

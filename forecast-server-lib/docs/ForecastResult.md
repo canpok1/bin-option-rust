@@ -5,6 +5,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **complete** | **bool** | 予測が完了したか？ | 
 **rate** | **f64** | レートの値 | [optional] [default to None]
+**rmse** | **f64** | 予測モデルのRMSE | [optional] [default to None]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

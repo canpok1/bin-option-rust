@@ -118,6 +118,7 @@ where
 
                     return Ok(ForecastAfter30minRateIdModelNoGetResponse::Status404(error));
                 }
+
                 if model.is_none() {
                     let error = models::Error {
                         message: format!("model is not found, model_no: {}", model_no),
@@ -135,11 +136,13 @@ where
                     models::ForecastResult {
                         complete: true,
                         rate: Some(forecast.result),
+                        rmse: Some(model.unwrap().get_performance_rmse()),
                     }
                 } else {
                     models::ForecastResult {
                         complete: false,
                         rate: None,
+                        rmse: Some(model.unwrap().get_performance_rmse()),
                     }
                 };
                 info!(

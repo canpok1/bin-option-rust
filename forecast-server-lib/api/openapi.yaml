@@ -94,6 +94,7 @@ components:
       description: 予測結果
       example:
         rate: 0.8008281904610115
+        rmse: 6.027456183070403
         complete: true
       properties:
         complete:
@@ -101,6 +102,10 @@ components:
           type: boolean
         rate:
           description: レートの値
+          format: double
+          type: number
+        rmse:
+          description: 予測モデルのRMSE
           format: double
           type: number
       required:
@@ -160,6 +165,7 @@ components:
       example:
         result:
           rate: 0.8008281904610115
+          rmse: 6.027456183070403
           complete: true
       properties:
         result:

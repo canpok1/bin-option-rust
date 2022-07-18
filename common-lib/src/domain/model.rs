@@ -238,61 +238,61 @@ impl ForecastModel {
         }
     }
 
-    pub fn get_performance_mse(&self) -> MyResult<f64> {
+    pub fn get_performance_mse(&self) -> f64 {
         match self {
             ForecastModel::RandomForest {
                 performance_mse, ..
-            } => Ok(*performance_mse),
+            } => *performance_mse,
             ForecastModel::KNN {
                 performance_mse, ..
-            } => Ok(*performance_mse),
+            } => *performance_mse,
             ForecastModel::Linear {
                 performance_mse, ..
-            } => Ok(*performance_mse),
+            } => *performance_mse,
             ForecastModel::Ridge {
                 performance_mse, ..
-            } => Ok(*performance_mse),
+            } => *performance_mse,
             ForecastModel::LASSO {
                 performance_mse, ..
-            } => Ok(*performance_mse),
+            } => *performance_mse,
             ForecastModel::ElasticNet {
                 performance_mse, ..
-            } => Ok(*performance_mse),
+            } => *performance_mse,
             ForecastModel::Logistic {
                 performance_mse, ..
-            } => Ok(*performance_mse),
+            } => *performance_mse,
             ForecastModel::SVR {
                 performance_mse, ..
-            } => Ok(*performance_mse),
+            } => *performance_mse,
         }
     }
 
-    pub fn get_performance_rmse(&self) -> MyResult<f64> {
+    pub fn get_performance_rmse(&self) -> f64 {
         match self {
             ForecastModel::RandomForest {
                 performance_rmse, ..
-            } => Ok(*performance_rmse),
+            } => *performance_rmse,
             ForecastModel::KNN {
                 performance_rmse, ..
-            } => Ok(*performance_rmse),
+            } => *performance_rmse,
             ForecastModel::Linear {
                 performance_rmse, ..
-            } => Ok(*performance_rmse),
+            } => *performance_rmse,
             ForecastModel::Ridge {
                 performance_rmse, ..
-            } => Ok(*performance_rmse),
+            } => *performance_rmse,
             ForecastModel::LASSO {
                 performance_rmse, ..
-            } => Ok(*performance_rmse),
+            } => *performance_rmse,
             ForecastModel::ElasticNet {
                 performance_rmse, ..
-            } => Ok(*performance_rmse),
+            } => *performance_rmse,
             ForecastModel::Logistic {
                 performance_rmse, ..
-            } => Ok(*performance_rmse),
+            } => *performance_rmse,
             ForecastModel::SVR {
                 performance_rmse, ..
-            } => Ok(*performance_rmse),
+            } => *performance_rmse,
         }
     }
 

@@ -114,6 +114,10 @@ components:
           description: レートの値
           type: number
           format: double
+        rmse:
+          description: 予測モデルのRMSE
+          type: number
+          format: double
     History:
       description: レート履歴
       type: object

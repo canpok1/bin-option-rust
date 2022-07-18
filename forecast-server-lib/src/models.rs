@@ -243,6 +243,11 @@ pub struct ForecastResult {
     #[serde(skip_serializing_if="Option::is_none")]
     pub rate: Option<f64>,
 
+    /// 予測モデルのRMSE
+    #[serde(rename = "rmse")]
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub rmse: Option<f64>,
+
 }
 
 impl ForecastResult {
@@ -250,6 +255,7 @@ impl ForecastResult {
         ForecastResult {
             complete: complete,
             rate: None,
+            rmse: None,
         }
     }
 }
@@ -270,6 +276,12 @@ impl std::string::ToString for ForecastResult {
             params.push(rate.to_string());
         }
 
+
+        if let Some(ref rmse) = self.rmse {
+            params.push("rmse".to_string());
+            params.push(rmse.to_string());
+        }
+
         params.join(",").to_string()
     }
 }
@@ -286,6 +298,7 @@ impl std::str::FromStr for ForecastResult {
         struct IntermediateRep {
             pub complete: Vec<bool>,
             pub rate: Vec<f64>,
+            pub rmse: Vec<f64>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -304,6 +317,7 @@ impl std::str::FromStr for ForecastResult {
                 match key {
                     "complete" => intermediate_rep.complete.push(<bool as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "rate" => intermediate_rep.rate.push(<f64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "rmse" => intermediate_rep.rmse.push(<f64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing ForecastResult".to_string())
                 }
             }
@@ -316,6 +330,7 @@ impl std::str::FromStr for ForecastResult {
         std::result::Result::Ok(ForecastResult {
             complete: intermediate_rep.complete.into_iter().next().ok_or("complete missing in ForecastResult".to_string())?,
             rate: intermediate_rep.rate.into_iter().next(),
+            rmse: intermediate_rep.rmse.into_iter().next(),
         })
     }
 }
